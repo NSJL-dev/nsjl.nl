@@ -1,86 +1,46 @@
 <!DOCTYPE html>
 <html lang="nl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NSJL</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>No Skill Just Luck – NSJL</title>
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #f0f4f8 0%, #d9e2ec 100%);
             margin: 0;
-            padding: 2rem;
-            color: #333;
-            min-height: 100vh;
-        }
-        .container {
-            background: white;
-            padding: 3rem;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            max-width: 700px;
-            margin: 2rem auto;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background: #111;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
             text-align: center;
-            transition: transform 0.3s ease;
-        }
-        .container:hover {
-            transform: translateY(-5px);
         }
         h1 {
-            color: #0057b8;
             font-size: 2.5rem;
-            margin-bottom: 1rem;
-            text-shadow: 2px 2px 4px rgba(0,87,184,0.1);
+            margin-bottom: 10px;
         }
         p {
-            font-size: 1.25rem;
-            line-height: 1.6;
-            margin: 1.5rem 0;
+            font-size: 1.2rem;
+            opacity: 0.8;
         }
-        .welcome-btn {
-            background: #0057b8;
-            color: white;
-            border: none;
-            padding: 12px 30px;
-            font-size: 1.1rem;
-            border-radius: 50px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(0,87,184,0.3);
-        }
-        .welcome-btn:hover {
-            background: #004494;
-            transform: scale(1.05);
+        footer {
+            position: absolute;
+            bottom: 20px;
+            opacity: 0.5;
+            font-size: 0.9rem;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🎉 Welkom op nsjl.nl</h1>
-        <p>Jouw site is live! Gemaakt met HTML, CSS en JavaScript.</p>
-        <p>Klaar voor jouw content en projecten.</p>
-        <button class="welcome-btn" onclick="showWelcome()">Start Ervaring</button>
-    </div>
+    <h1>No Skill Just Luck</h1>
+    <p>De officiële website van onze dartclub is in ontwikkeling.</p>
+    <p>Binnenkort vind je hier nieuws, planning, uitslagen en meer!</p>
 
-    <script>
-        function showWelcome() {
-            document.querySelector('.container').style.transform = 'scale(0.95)';
-            setTimeout(() => {
-                alert('🚀 Geweldig! nsjl.nl is nu online.\n\nUpload dit bestand als index.html naar je hosting en je bent live!');
-                document.querySelector('.container').style.transform = 'translateY(-5px)';
-            }, 200);
-        }
-
-        // Automatische animatie bij laden
-        window.onload = () => {
-            document.querySelector('.container').style.opacity = '0';
-            document.querySelector('.container').style.transform = 'translateY(20px)';
-            setTimeout(() => {
-                document.querySelector('.container').style.transition = 'all 0.8s ease';
-                document.querySelector('.container').style.opacity = '1';
-                document.querySelector('.container').style.transform = 'translateY(0)';
-            }, 100);
-        };
-    </script>
+    <footer>
+        &copy; 2025 NSJL Dartclub
+    </footer>
 </body>
 </html>
