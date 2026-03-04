@@ -1,24 +1,217 @@
 <!DOCTYPE html>
 <html lang="nl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>No Skill Just Luck - Scorebord</title>
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NBJL Darts</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&display=swap" rel="stylesheet">
+
+<style>
+body {
+    margin: 0;
+    font-family: 'Montserrat', sans-serif;
+    background-color: #0B2A5B;
+    color: white;
+}
+
+header {
+    background-color: #1E3F7A;
+    padding: 30px;
+    text-align: center;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 32px;
+}
+
+nav {
+    background-color: white;
+    padding: 15px;
+    text-align: center;
+}
+
+nav a {
+    color: #0B2A5B;
+    margin: 0 20px;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+section {
+    padding: 60px 20px;
+    max-width: 1000px;
+    margin: auto;
+}
+
+.card {
+    background-color: #1E3F7A;
+    padding: 30px;
+    border-radius: 10px;
+    margin-bottom: 30px;
+}
+
+.score {
+    font-size: 40px;
+    font-weight: 800;
+    text-align: center;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+th, td {
+    padding: 12px;
+    text-align: center;
+}
+
+th {
+    background-color: white;
+    color: #0B2A5B;
+}
+
+tr:nth-child(even) {
+    background-color: #173464;
+}
+
+footer {
+    background-color: #1E3F7A;
+    text-align: center;
+    padding: 20px;
+    margin-top: 40px;
+}
+</style>
 </head>
 <body>
 
-    <header>
-        <h1>No Skill Just Luck (NSJL)</h1>
-        <p>Officiële team website</p>
-    </header>
+<header>
+    <h1>NBJL Darts</h1>
+    <p>Voor doorzetters & Jokers 🎯</p>
+</header>
 
-    <section class="scoreboard">
-        <h2>Huidige Stand</h2>
-        <div id="scoreDisplay" class="score">0</div>
-    </section>
+<nav>
+    <a href="#score">Score</a>
+    <a href="#stand">Stand</a>
+    <a href="#agenda">Agenda</a>
+</nav>
 
-    <script src="script.js"></script>
+<section id="score">
+    <div class="card">
+        <h2>Live Score</h2>
+        <!-- SCORE HIER AANPASSEN -->
+        <div class="score">
+            NBJL 7 - 4 Tegenstander
+        </div>
+    </div>
+</section>
+
+<section id="stand">
+    <div class="card">
+        <h2>Competitiestand</h2>
+        <table>
+            <tr>
+                <th>#</th>
+                <th>Team</th>
+                <th>Win %</th>
+                <th>Games</th>
+                <th>Wins</th>
+            </tr>
+            <tr>
+                <td>1</td>
+                <td>De Koster 1</td>
+                <td>66.0</td>
+                <td>315</td>
+                <td>208</td>
+            </tr>
+            <tr>
+                <td>2</td>
+                <td>T Centrum 1</td>
+                <td>65.2</td>
+                <td>273</td>
+                <td>178</td>
+            </tr>
+            <tr>
+                <td>3</td>
+                <td>Bonn 2</td>
+                <td>60.0</td>
+                <td>315</td>
+                <td>189</td>
+            </tr>
+            <tr>
+                <td>4</td>
+                <td>Bonn 5</td>
+                <td>58.3</td>
+                <td>252</td>
+                <td>147</td>
+            </tr>
+            <tr>
+                <td>5</td>
+                <td>Bullseye Bandieten</td>
+                <td>54.1</td>
+                <td>294</td>
+                <td>159</td>
+            </tr>
+            <tr>
+                <td>6</td>
+                <td>The Saloon 5</td>
+                <td>51.4</td>
+                <td>315</td>
+                <td>162</td>
+            </tr>
+            <tr>
+                <td>7</td>
+                <td>Saloon 3</td>
+                <td>50.9</td>
+                <td>273</td>
+                <td>139</td>
+            </tr>
+            <tr>
+                <td>8</td>
+                <td>Triple Drieske</td>
+                <td>50.8</td>
+                <td>315</td>
+                <td>160</td>
+            </tr>
+            <tr>
+                <td>9</td>
+                <td>Saloon 4</td>
+                <td>45.4</td>
+                <td>315</td>
+                <td>143</td>
+            </tr>
+            <tr>
+                <td>10</td>
+                <td>No Skill Just Luck</td>
+                <td>35.6</td>
+                <td>315</td>
+                <td>112</td>
+            </tr>
+            <tr>
+                <td>11</td>
+                <td>Niet Te Pijlen</td>
+                <td>13.9</td>
+                <td>294</td>
+                <td>41</td>
+            </tr>
+        </table>
+    </div>
+</section>
+
+<section id="agenda">
+    <div class="card">
+        <h2>Agenda</h2>
+        <p>📅 12 maart - NBJL vs The Bulls - 20:00 (Thuis)</p>
+        <p>📅 19 maart - Triple 20 vs NBJL - 20:00 (Uit)</p>
+        <p>📅 26 maart - NBJL vs The Arrows - 20:00 (Thuis)</p>
+    </div>
+</section>
+
+<footer>
+    © 2026 NBJL Darts
+</footer>
 
 </body>
 </html>
