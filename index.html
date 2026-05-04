@@ -1,191 +1,217 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="nl">
 <head>
-  <meta charset="UTF-8">
-  <title>SportX</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dartclub Standings</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      font-family: Helvetica, Arial, sans-serif;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #232323;
+      color: #fff;
+    }
+
+    .container-wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    input[type=text],
+    textarea,
+    input[type=email],
+    input[type=password],
+    input[type=tel],
+    input[type=url],
+    input[type=search],
+    input[type=date] {
+      padding: 10px;
+      width: 100%;
+      font-size: 14px;
+      font-family: inherit;
+      line-height: 24px;
+      color: #fff;
+      background-color: rgba(0,0,0,0.1);
+      border-radius: 4px;
+      border: 2px solid rgba(0,0,0,0);
+      transition: all 0.2s ease;
+    }
+
+    #leaderboard {
+      padding: 50px 20px;
+    }
+
+    .ladder-nav {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 20px;
+      background: #5055CB;
+      padding: 15px 25px;
+      border-radius: 10px;
+      border: 1px solid #686EF9;
+      margin-bottom: 20px;
+    }
+
+    .ladder-title {
+      flex: 2;
+    }
+
+    .ladder-title h1 {
+      font-size: 20px;
+      color: #888DFF;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+
+    .ladder-search {
+      flex: 1;
+      min-width: 220px;
+    }
+
+    .ladder-search input::placeholder {
+      color: #888DFF;
+    }
+
+    .leaderboard-results {
+      text-align: left;
+      border-collapse: collapse;
+      width: 100%;
+    }
+
+    .leaderboard-results thead th {
+      padding: 20px 15px;
+      color: #747474;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    .leaderboard-results tbody td {
+      padding: 15px;
+      background: #1a1a1a;
+      font-size: 16px;
+      border-bottom: 5px solid #232323;
+      color: #cfcfcf;
+    }
+
+    .leaderboard-results tbody td:nth-of-type(7) {
+      font-weight: bold;
+    }
+
+    .leaderboard-results tbody tr:hover td {
+      background: #1d1d1d;
+    }
+
+    .leaderboard-results tbody tr:first-child td {
+      color: #686EF9;
+    }
+
+    @media (max-width: 768px) {
+      .leaderboard-results {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+
+      .ladder-nav {
+        flex-direction: column;
+        align-items: stretch;
+      }
+    }
+  </style>
 </head>
 <body>
+  <div class="container-wrap">
+    <section id="leaderboard">
+      <nav class="ladder-nav">
+        <div class="ladder-title">
+          <h1>Standings</h1>
+        </div>
+        <div class="ladder-search">
+          <input
+            type="text"
+            id="search-leaderboard"
+            class="live-search-box"
+            placeholder="Search Team, Player..."
+          />
+        </div>
+      </nav>
 
-<header class="header">
-  <div class="header-top">
-    <div class="logo">SportX</div>
-    <div class="icon">🔔</div>
+      <table id="rankings" class="leaderboard-results">
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Team</th>
+            <th>Win %</th>
+            <th>Games</th>
+            <th>Wins</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Data komt hier -->
+        </tbody>
+      </table>
+    </section>
   </div>
 
-  <div class="filters">
-    <div class="filter active">Football</div>
-    <div class="filter">Basketball</div>
-    <div class="filter">Hockey</div>
-  </div>
-</header>
+  <script>
+    const rankingsBody = document.querySelector("#rankings tbody");
 
+    const rankingsData = [
+      [1, "De Koster 1", "69.9", "399", "279"],
+      [2, "T Centrum 1", "62.9", "399", "251"],
+      [3, "Bonn 2", "59.4", "399", "237"],
+      [4, "Bonn 5", "59.4", "399", "237"],
+      [5, "The Saloon 5", "54.8", "420", "230"],
+      [6, "Bullseye Bandieten", "52.4", "399", "209"],
+      [7, "Triple Drieske", "51.1", "399", "204"],
+      [8, "Saloon 3", "45.6", "399", "182"],
+      [9, "Saloon 4", "43.4", "399", "173"],
+      [10, "No Skill Just Luck", "36.6", "399", "146"],
+      [11, "Niet Te Pijlen", "14.3", "399", "57"]
+    ];
 
-<!-- LIVE MATCH -->
-<section class="card">
-  <div class="section-title">LIVE</div>
+    function populateRankings(data) {
+      rankingsBody.innerHTML = "";
 
-  <div class="score-wrapper">
-    <div class="team">
-      <div>Chelsea</div>
-      <div class="score" id="score1">2</div>
-    </div>
+      data.forEach((row) => {
+        const tr = document.createElement("tr");
 
-    <div class="vs">-</div>
+        row.forEach((cell) => {
+          const td = document.createElement("td");
+          td.textContent = cell;
+          tr.appendChild(td);
+        });
 
-    <div class="team">
-      <div>Ajax</div>
-      <div class="score" id="score2">1</div>
-    </div>
-  </div>
+        rankingsBody.appendChild(tr);
+      });
+    }
 
-  <div class="match-time">37:19 • Champions League</div>
+    function filterRankings() {
+      const searchValue = document
+        .querySelector("#search-leaderboard")
+        .value
+        .toLowerCase();
 
-  <div class="tabs">
-    <span class="tab active" data-tab="summary">Summary</span>
-    <span class="tab" data-tab="box">Box Score</span>
-    <span class="tab" data-tab="play">Play-by-Play</span>
-  </div>
+      const rows = document.querySelectorAll("#rankings tbody tr");
 
-  <div class="tab-content active" id="summary">
-    <p>Goals: 18’ Sterling, 27’ Caicedo</p>
-  </div>
+      rows.forEach((row) => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(searchValue) ? "" : "none";
+      });
+    }
 
-  <div class="tab-content" id="box">
-    <p>Shots: 10 - 7</p>
-    <p>Possession: 61% - 39%</p>
-  </div>
-
-  <div class="tab-content" id="play">
-    <p>37’ Ajax attacking down the right flank...</p>
-  </div>
-</section>
-
-
-<!-- TEAM STANDINGS -->
-<section class="card">
-  <div class="section-title">TEAM STANDINGS</div>
-
-  <table id="teamStandings">
-    <tr>
-      <th>#</th>
-      <th>Team</th>
-      <th>P</th>
-      <th>W</th>
-      <th>L</th>
-    </tr>
-  </table>
-</section>
-
-
-<!-- LAST MATCH RESULTS -->
-<section class="card">
-  <div class="section-title">LAST MATCH RESULTS</div>
-
-  <div id="lastResults"></div>
-</section>
-
-
-<!-- MOST IMPROVED PLAYER -->
-<section class="card" id="mipCard" style="display:none;">
-  <div class="section-title">MOST IMPROVED PLAYER</div>
-
-  <div class="mip-container">
-    <div class="mip-name" id="mipName"></div>
-    <div class="mip-stats" id="mipStats"></div>
-  </div>
-</section>
-
-
-<!-- STANDINGS -->
-<section class="card">
-  <div class="section-title">STANDINGS</div>
-  <table>
-    <tr>
-      <th>#</th>
-      <th>Team</th>
-      <th>P</th>
-    </tr>
-    <tr>
-      <td>1</td>
-      <td>Chelsea</td>
-      <td>18</td>
-    </tr>
-    <tr>
-      <td>2</td>
-      <td>Ajax</td>
-      <td>15</td>
-    </tr>
-  </table>
-</section>
-
-
-<!-- MATCHES -->
-<section class="card">
-  <div class="section-title">TODAY</div>
-
-  <div class="match">
-    <div>Bucks vs Raptors</div>
-    <div class="badge-live">LIVE</div>
-  </div>
-
-  <div class="match">
-    <div>Hawks vs Magic</div>
-    <div>Final</div>
-  </div>
-</section>
-
-
-<!-- TEAM STATS -->
-<section class="card">
-  <div class="section-title">TEAM STATS</div>
-
-  <div class="stat">
-    <div class="stat-label">Field Goal %</div>
-    <div class="stat-bar">
-      <div class="stat-fill" style="width:65%"></div>
-    </div>
-  </div>
-
-  <div class="stat">
-    <div class="stat-label">3-Point %</div>
-    <div class="stat-bar">
-      <div class="stat-fill" style="width:42%"></div>
-    </div>
-  </div>
-</section>
-
-
-<!-- HIGHLIGHTS -->
-<section class="card">
-  <div class="section-title">HIGHLIGHTS</div>
-
-  <div class="highlights">
-    <div class="highlight-item">Stunning volley</div>
-    <div class="highlight-item">Last minute equalizer</div>
-    <div class="highlight-item">Incredible save</div>
-  </div>
-</section>
-
-
-<!-- NEWS -->
-<section class="card">
-  <div class="section-title">NEWS</div>
-  <div class="news-item">• Transfer rumors heating up</div>
-  <div class="news-item">• Coach reacts after defeat</div>
-  <div class="news-item">• Injury update before derby</div>
-</section>
-
-
-<!-- BOTTOM NAV -->
-<nav class="bottom-nav">
-  <div class="nav-item active">Home</div>
-  <div class="nav-item">Matches</div>
-  <div class="nav-item">Standings</div>
-  <div class="nav-item">Profile</div>
-</nav>
-
-<script src="script.js"></script>
+    document.addEventListener("DOMContentLoaded", () => {
+      populateRankings(rankingsData);
+      document
+        .querySelector("#search-leaderboard")
+        .addEventListener("keyup", filterRankings);
+    });
+  </script>
 </body>
 </html>
