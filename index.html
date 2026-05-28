@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NSJL – No Skill Just Luck</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    /* ─── RESET & BASE ─── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue-900: #0c1f4a;
+      --blue-700: #222e59;
+      --blue-500: #2563eb;
+      --blue-400: #3b82f6;
+      --blue-200: #bfdbfe;
+      --blue-100: #dbeafe;
+      --blue-50:  #eff6ff;
+      --gold:     #f59e0b;
+      --gold-light: #fef3c7;
+      --green:    #10b981;
+      --red:      #ef4444;
+      --gray-900: #111827;
+      --gray-700: #374151;
+      --gray-500: #6b7280;
+      --gray-300: #d1d5db;
+      --gray-100: #f3f4f6;
+      --white:    #ffffff;
+      --radius:   12px;
+      --shadow:   0 4px 24px rgba(37,99,235,.10);
+      --shadow-lg:0 8px 40px rgba(37,99,235,.15);
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Nunito', sans-serif;
+      background: var(--white);
+      color: var(--gray-900);
+      overflow-x: hidden;
+    }
+    h1,h2,h3,h4 { font-family: 'Bebas Neue', sans-serif; letter-spacing: .04em; }
+    a { text-decoration: none; color: inherit; }
+    img { display: block; max-width: 100%; }
+
+    /* ─── SCROLLBAR ─── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--blue-50); }
+    ::-webkit-scrollbar-thumb { background: var(--blue-400); border-radius: 99px; }
+
+    /* ─── NAV ─── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: rgba(255,255,255,.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 2px solid var(--blue-100);
+      padding: 0 clamp(1rem, 4vw, 2.5rem);
+      height: 64px;
+      display: flex; align-items: center; justify-content: space-between;
+      box-shadow: 0 2px 16px rgba(37,99,235,.08);
+    }
+    .nav-logo {
+      display: flex; align-items: center; gap: .6rem;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.6rem;
+      color: var(--blue-700);
+    }
+    .nav-logo span { color: var(--gold); }
+    .nav-logo svg { flex-shrink: 0; }
+    .nav-links {
+      display: flex; gap: clamp(.6rem, 2vw, 1.8rem);
+      list-style: none;
+    }
+    .nav-links a {
+      font-weight: 700; font-size: .88rem; color: var(--gray-700);
+      padding: .3rem .5rem; border-radius: 6px;
+      transition: color .2s, background .2s;
+      text-transform: uppercase; letter-spacing: .06em;
+    }
+    .nav-links a:hover { color: var(--blue-500); background: var(--blue-50); }
+    .hamburger {
+      display: none; flex-direction: column; gap: 5px; cursor: pointer;
+      background: none; border: none; padding: 4px;
+    }
+    .hamburger span {
+      display: block; width: 24px; height: 2px;
+      background: var(--blue-700); border-radius: 2px;
+      transition: all .3s;
+    }
+    .mobile-menu {
+      display: none; position: fixed; top: 64px; left: 0; right: 0;
+      background: var(--white); border-bottom: 2px solid var(--blue-100);
+      padding: 1rem 1.5rem; z-index: 99;
+      box-shadow: 0 8px 24px rgba(0,0,0,.08);
+    }
+    .mobile-menu.open { display: block; }
+    .mobile-menu a {
+      display: block; padding: .75rem 0;
+      font-weight: 700; font-size: 1rem;
+      color: var(--gray-700); border-bottom: 1px solid var(--gray-100);
+      text-transform: uppercase; letter-spacing: .06em;
+    }
+    .mobile-menu a:last-child { border-bottom: none; }
+
+    /* ─── SECTIONS ─── */
+    section { padding: clamp(3rem, 8vw, 6rem) clamp(1rem, 5vw, 2.5rem); }
+    .section-title {
+      font-size: clamp(2.2rem, 5vw, 3.5rem);
+      color: var(--blue-900);
+      margin-bottom: .4rem;
+    }
+    .section-sub {
+      font-size: 1rem; color: var(--gray-500); font-weight: 600;
+      margin-bottom: 2.5rem;
+    }
+    .container { max-width: 1200px; margin: 0 auto; }
+
+    /* ─── HERO ─── */
+    #hero {
+      min-height: 100vh;
+      padding-top: 64px;
+      background:
+        radial-gradient(ellipse 80% 60% at 70% 50%, #dbeafe 0%, transparent 70%),
+        radial-gradient(ellipse 50% 40% at 20% 80%, #eff6ff 0%, transparent 60%),
+        var(--white);
+      display: flex; align-items: center;
+    }
+    .hero-inner {
+      max-width: 1200px; margin: 0 auto;
+      display: grid; grid-template-columns: 1fr auto;
+      gap: 2rem; align-items: center;
+      width: 100%;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: .5rem;
+      background: var(--gold-light); color: #92400e;
+      font-weight: 800; font-size: .8rem; letter-spacing: .08em;
+      padding: .35rem .9rem; border-radius: 99px;
+      margin-bottom: 1.2rem; text-transform: uppercase;
+    }
+    .hero-title {
+      font-size: clamp(3.5rem, 8vw, 7rem);
+      line-height: .95;
+      color: var(--blue-900);
+    }
+    .hero-title span { color: var(--blue-500); }
+    .hero-subtitle {
+      font-size: clamp(1rem, 2.5vw, 1.3rem);
+      color: var(--gray-700); font-weight: 600;
+      margin: 1rem 0 2rem;
+      max-width: 520px;
+    }
+    .hero-tagline {
+      font-style: italic; color: var(--gray-500); font-size: .95rem;
+      margin-bottom: 2.5rem;
+    }
+    .hero-stats {
+      display: flex; gap: 2rem; margin-bottom: 2.5rem; flex-wrap: wrap;
+    }
+    .hero-stat { text-align: center; }
+    .hero-stat-num {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 2.4rem; color: var(--blue-500); line-height: 1;
+    }
+    .hero-stat-label {
+      font-size: .78rem; font-weight: 700; color: var(--gray-500);
+      text-transform: uppercase; letter-spacing: .06em;
+    }
+    .hero-cta {
+      display: inline-flex; align-items: center; gap: .5rem;
+      background: var(--blue-500); color: var(--white);
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.2rem; letter-spacing: .1em;
+      padding: .85rem 2rem; border-radius: var(--radius);
+      box-shadow: 0 4px 20px rgba(37,99,235,.35);
+      transition: transform .2s, box-shadow .2s;
+    }
+    .hero-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(37,99,235,.45); }
+    .hero-dart-wrap {
+      position: relative; flex-shrink: 0;
+      animation: float 3.5s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%,100% { transform: translateY(0); }
+      50%      { transform: translateY(-14px); }
+    }
+
+    /* ─── LIVE STAND ─── */
+    #live { background: var(--blue-900); color: var(--white); }
+    .live-header {
+      display: flex; align-items: center; gap: 1rem; margin-bottom: 2rem;
+    }
+    .live-dot {
+      width: 12px; height: 12px; border-radius: 50%;
+      background: #22c55e;
+      box-shadow: 0 0 0 0 rgba(34,197,94,.7);
+      animation: pulse 1.5s ease-out infinite;
+    }
+    @keyframes pulse {
+      0%   { box-shadow: 0 0 0 0 rgba(34,197,94,.7); }
+      70%  { box-shadow: 0 0 0 10px rgba(34,197,94,0); }
+      100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); }
+    }
+    .live-label {
+      background: #22c55e; color: var(--white);
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1rem; letter-spacing: .15em;
+      padding: .25rem .8rem; border-radius: 6px;
+    }
+    .live-title-text {
+      font-size: clamp(2rem, 4vw, 3rem);
+      color: var(--white);
+    }
+    .live-card {
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 20px;
+      padding: clamp(1.5rem, 4vw, 2.5rem);
+      max-width: 780px; margin: 0 auto;
+    }
+    .live-match-meta {
+      text-align: center; margin-bottom: 2rem;
+      font-size: .85rem; font-weight: 700;
+      color: var(--blue-200); text-transform: uppercase; letter-spacing: .1em;
+    }
+    .live-scoreboard {
+      display: grid; grid-template-columns: 1fr auto 1fr;
+      align-items: center; gap: 1rem;
+    }
+    .live-team { text-align: center; }
+    .live-team-name {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(1.4rem, 3vw, 2.2rem);
+      color: var(--white); margin-bottom: .3rem;
+    }
+    .live-team-name.nsjl { color: var(--gold); }
+    .live-player { font-size: .85rem; color: var(--blue-200); font-weight: 600; }
+    .live-score-box {
+      display: flex; flex-direction: column; align-items: center; gap: .5rem;
+    }
+    .live-score {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(3.5rem, 8vw, 6rem);
+      line-height: 1;
+      color: var(--white);
+      display: flex; gap: .5rem; align-items: center;
+    }
+    .live-score-vs { font-size: 1.5rem; color: var(--blue-200); }
+    .live-leg-score {
+      font-size: .9rem; font-weight: 700; color: var(--blue-200);
+    }
+    .live-players-grid {
+      margin-top: 2rem;
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    .live-player-row {
+      background: rgba(255,255,255,.04);
+      border-radius: 10px; padding: .9rem 1.1rem;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .live-player-row.active { border-left: 3px solid var(--gold); }
+    .lpr-name { font-weight: 800; font-size: .9rem; }
+    .lpr-left {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.6rem; color: var(--gold);
+    }
+
+    /* ─── COMPETITIE STAND ─── */
+    #stand { background: var(--gray-100); }
+    .stand-table-wrap {
+      overflow-x: auto; border-radius: var(--radius);
+      box-shadow: var(--shadow-lg);
+    }
+    .stand-table {
+      width: 100%; border-collapse: collapse;
+      background: var(--white); min-width: 560px;
+      border-radius: var(--radius); overflow: hidden;
+    }
+    .stand-table thead { background: var(--blue-700); color: var(--white); }
+    .stand-table th {
+      padding: 1rem .9rem; font-family: 'Bebas Neue', sans-serif;
+      font-size: 1rem; letter-spacing: .08em;
+      text-align: left;
+    }
+    .stand-table th:not(:first-child):not(:nth-child(2)) { text-align: center; }
+    .stand-table td {
+      padding: .85rem .9rem; font-weight: 700;
+      border-bottom: 1px solid var(--gray-100);
+    }
+    .stand-table td:not(:first-child):not(:nth-child(2)) { text-align: center; }
+    .stand-table tbody tr:hover { background: var(--blue-50); transition: background .15s; }
+    .stand-table tbody tr:last-child td { border-bottom: none; }
+    .pos-badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 28px; height: 28px; border-radius: 50%;
+      font-family: 'Bebas Neue', sans-serif; font-size: .95rem;
+    }
+    .pos-1 { background: #ffd700; color: #7c5500; }
+    .pos-2 { background: #c0c0c0; color: #3d3d3d; }
+    .pos-3 { background: #cd7f32; color: var(--white); }
+    .pos-other { background: var(--gray-100); color: var(--gray-700); }
+    .nsjl-row { background: var(--blue-50) !important; }
+    .nsjl-row td:nth-child(2) { color: var(--blue-600); }
+    .team-label { font-weight: 900; }
+    .nsjl-tag {
+      display: inline-block; background: var(--gold); color: #7c3a00;
+      font-size: .65rem; font-weight: 900; letter-spacing: .06em;
+      padding: 1px 6px; border-radius: 4px; margin-left: 6px;
+      vertical-align: middle; text-transform: uppercase;
+    }
+    .pts { font-family: 'Bebas Neue', sans-serif; font-size: 1.2rem; color: var(--blue-700); }
+    .form-dot {
+      display: inline-flex; width: 22px; height: 22px;
+      border-radius: 50%; align-items: center; justify-content: center;
+      font-size: .7rem; font-weight: 900; color: var(--white);
+      margin: 0 1px;
+    }
+    .form-w { background: var(--green); }
+    .form-d { background: var(--gold); color: #7c3a00; }
+    .form-l { background: var(--red); }
+
+    /* ─── TEAM INFO ─── */
+    #team { background: var(--white); }
+    .players-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 1.5rem;
+    }
+    .player-card {
+      background: var(--white);
+      border: 2px solid var(--blue-100);
+      border-radius: 20px;
+      padding: 1.8rem 1.4rem;
+      text-align: center;
+      box-shadow: var(--shadow);
+      transition: transform .25s, box-shadow .25s, border-color .25s;
+      position: relative; overflow: hidden;
+    }
+    .player-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 4px;
+      background: linear-gradient(90deg, var(--blue-500), var(--blue-400));
+    }
+    .player-card:hover {
+      transform: translateY(-6px); box-shadow: var(--shadow-lg);
+      border-color: var(--blue-200);
+    }
+    .player-avatar {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: var(--blue-100);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Bebas Neue', sans-serif; font-size: 1.8rem;
+      color: var(--blue-700); margin: 0 auto 1rem;
+      border: 3px solid var(--blue-200);
+    }
+    .player-name { font-size: 1.4rem; color: var(--blue-900); margin-bottom: .15rem; }
+    .player-nick {
+      font-size: .85rem; font-weight: 700;
+      color: var(--gold); margin-bottom: .25rem;
+      font-style: italic;
+    }
+    .player-role {
+      font-size: .78rem; color: var(--gray-500); font-weight: 600;
+      text-transform: uppercase; letter-spacing: .06em; margin-bottom: 1.2rem;
+    }
+    .player-stats {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: .6rem; margin-top: 1rem;
+    }
+    .pstat {
+      background: var(--blue-50); border-radius: 8px; padding: .6rem .4rem;
+    }
+    .pstat-val {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.4rem; color: var(--blue-700);
+    }
+    .pstat-label { font-size: .68rem; font-weight: 700; color: var(--gray-500); text-transform: uppercase; letter-spacing: .04em; }
+    .captain-badge {
+      position: absolute; top: .8rem; right: .8rem;
+      background: var(--gold); color: #7c3a00;
+      font-size: .65rem; font-weight: 900;
+      padding: 2px 8px; border-radius: 99px;
+      text-transform: uppercase; letter-spacing: .06em;
+    }
+
+    /* ─── WEDSTRIJDSCHEMA ─── */
+    #schema { background: var(--blue-50); }
+    .schema-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+    }
+    .schema-col-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.6rem; color: var(--blue-900);
+      margin-bottom: 1rem; display: flex; align-items: center; gap: .6rem;
+    }
+    .schema-col-title svg { color: var(--blue-500); }
+    .match-item {
+      background: var(--white); border-radius: var(--radius);
+      border: 1.5px solid var(--blue-100);
+      padding: 1.1rem 1.3rem;
+      margin-bottom: .9rem;
+      box-shadow: 0 2px 10px rgba(37,99,235,.07);
+      transition: transform .2s;
+    }
+    .match-item:hover { transform: translateX(4px); }
+    .match-date {
+      font-size: .75rem; font-weight: 700; color: var(--blue-400);
+      text-transform: uppercase; letter-spacing: .08em; margin-bottom: .4rem;
+      display: flex; align-items: center; gap: .4rem;
+    }
+    .match-teams {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.3rem; color: var(--blue-900);
+    }
+    .match-teams span { color: var(--blue-500); }
+    .match-location { font-size: .8rem; color: var(--gray-500); font-weight: 600; margin-top: .25rem; }
+    .match-result {
+      display: inline-block; margin-top: .6rem;
+      font-family: 'Bebas Neue', sans-serif; font-size: 1rem;
+      padding: .15rem .7rem; border-radius: 6px;
+    }
+    .result-w { background: #dcfce7; color: #166534; }
+    .result-l { background: #fee2e2; color: #991b1b; }
+    .result-d { background: var(--gold-light); color: #92400e; }
+
+    /* ─── NIEUWS ─── */
+    #nieuws { background: var(--white); }
+    .nieuws-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      gap: 1.5rem;
+    }
+    .nieuws-card {
+      border-radius: 18px; overflow: hidden;
+      border: 1.5px solid var(--blue-100);
+      box-shadow: var(--shadow);
+      transition: transform .25s, box-shadow .25s;
+    }
+    .nieuws-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-lg); }
+    .nieuws-img {
+      width: 100%; height: 180px; object-fit: cover;
+      background: var(--blue-100);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 3rem;
+    }
+    .nieuws-body { padding: 1.3rem 1.4rem; }
+    .nieuws-tag {
+      display: inline-block;
+      background: var(--blue-100); color: var(--blue-700);
+      font-size: .72rem; font-weight: 800; letter-spacing: .08em;
+      padding: .2rem .7rem; border-radius: 99px; text-transform: uppercase;
+      margin-bottom: .7rem;
+    }
+    .nieuws-title {
+      font-size: 1.35rem; color: var(--blue-900);
+      margin-bottom: .5rem; line-height: 1.15;
+    }
+    .nieuws-excerpt { font-size: .88rem; color: var(--gray-500); font-weight: 600; line-height: 1.5; }
+    .nieuws-date { font-size: .78rem; color: var(--gray-400); font-weight: 700; margin-top: .9rem; }
+
+    /* ─── FOTO GALERIJ ─── */
+    #galerij { background: var(--gray-100); }
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: .9rem;
+    }
+    .gallery-item {
+      border-radius: 12px; overflow: hidden;
+      aspect-ratio: 1; position: relative; cursor: pointer;
+      box-shadow: 0 2px 10px rgba(0,0,0,.08);
+    }
+    .gallery-item img {
+      width: 100%; height: 100%; object-fit: cover;
+      transition: transform .35s;
+    }
+    .gallery-item:hover img { transform: scale(1.07); }
+    .gallery-overlay {
+      position: absolute; inset: 0;
+      background: rgba(10,30,74,.55);
+      opacity: 0; transition: opacity .25s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .gallery-item:hover .gallery-overlay { opacity: 1; }
+    .gallery-overlay-icon { font-size: 2rem; }
+    /* placeholder gallery tiles */
+    .gal-placeholder {
+      width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2.2rem;
+      background: var(--blue-100);
+    }
+
+    /* ─── CONTACT ─── */
+    #contact { background: var(--blue-900); color: var(--white); }
+    .contact-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 3rem; align-items: start;
+    }
+    .contact-info h2 { color: var(--white); margin-bottom: .5rem; }
+    .contact-info p { color: var(--blue-200); font-size: .95rem; margin-bottom: 2rem; font-weight: 600; }
+    .contact-items { display: flex; flex-direction: column; gap: 1.1rem; }
+    .contact-item {
+      display: flex; align-items: center; gap: 1rem;
+      background: rgba(255,255,255,.06); border-radius: 12px;
+      padding: .9rem 1.2rem; border: 1px solid rgba(255,255,255,.1);
+    }
+    .contact-item-icon {
+      width: 40px; height: 40px; border-radius: 10px;
+      background: var(--blue-500); flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem;
+    }
+    .contact-item-label { font-size: .75rem; font-weight: 700; color: var(--blue-200); text-transform: uppercase; letter-spacing: .06em; }
+    .contact-item-val { font-weight: 800; color: var(--white); }
+    .contact-form { background: rgba(255,255,255,.05); border-radius: 20px; padding: 2rem; border: 1px solid rgba(255,255,255,.1); }
+    .contact-form h3 { font-size: 1.8rem; color: var(--white); margin-bottom: 1.3rem; }
+    .form-group { margin-bottom: 1rem; }
+    .form-group label { display: block; font-size: .8rem; font-weight: 700; color: var(--blue-200); margin-bottom: .4rem; text-transform: uppercase; letter-spacing: .06em; }
+    .form-group input, .form-group textarea {
+      width: 100%; background: rgba(255,255,255,.08);
+      border: 1.5px solid rgba(255,255,255,.12); border-radius: 10px;
+      padding: .75rem 1rem; color: var(--white);
+      font-family: 'Nunito', sans-serif; font-size: .95rem; font-weight: 600;
+      transition: border-color .2s;
+      resize: vertical;
+    }
+    .form-group input::placeholder, .form-group textarea::placeholder { color: rgba(255,255,255,.3); }
+    .form-group input:focus, .form-group textarea:focus {
+      outline: none; border-color: var(--blue-400);
+      background: rgba(255,255,255,.12);
+    }
+    .form-submit {
+      width: 100%; background: var(--blue-500); color: var(--white);
+      border: none; cursor: pointer;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.2rem; letter-spacing: .1em;
+      padding: .9rem; border-radius: 10px;
+      margin-top: .5rem;
+      transition: background .2s, transform .2s;
+    }
+    .form-submit:hover { background: var(--blue-400); transform: translateY(-2px); }
+
+    /* ─── FOOTER ─── */
+    footer {
+      background: #060e22; color: rgba(255,255,255,.4);
+      text-align: center; padding: 1.5rem;
+      font-size: .82rem; font-weight: 600;
+    }
+    footer span { color: var(--gold); }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 900px) {
+      .hero-inner { grid-template-columns: 1fr; text-align: center; }
+      .hero-stats { justify-content: center; }
+      .hero-subtitle { margin: 1rem auto 2rem; }
+      .hero-badge { justify-content: center; margin: 0 auto 1.2rem; }
+      .hero-dart-wrap { display: none; }
+      .schema-grid { grid-template-columns: 1fr; }
+      .contact-grid { grid-template-columns: 1fr; }
+      .live-players-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 660px) {
+      .nav-links { display: none; }
+      .hamburger { display: flex; }
+      .hero-title { font-size: 3.2rem; }
+      .live-scoreboard { grid-template-columns: 1fr; }
+      .live-score-box { order: -1; }
+      .live-score { font-size: 3.5rem; }
+    }
+    @media (max-width: 420px) {
+      .players-grid { grid-template-columns: 1fr; }
+      .nieuws-grid { grid-template-columns: 1fr; }
+      .gallery-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    /* ─── ANIMATIONS ─── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(28px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-up { opacity: 0; animation: fadeUp .6s ease forwards; }
+    .delay-1 { animation-delay: .1s; }
+    .delay-2 { animation-delay: .2s; }
+    .delay-3 { animation-delay: .3s; }
+    .delay-4 { animation-delay: .4s; }
+  </style>
+</head>
+<body>
+
+<!-- ─── NAV ─── -->
+<nav>
+  <div class="nav-logo">
+    <!-- Dart icon -->
+    <img width="50" height="50" viewBox="0 0 50 50" src="img/logo-nsjl-blauw.png" alt="Logo van NSJL">
+  </div>
+  <ul class="nav-links">
+    <li><a href="#live">Live</a></li>
+    <li><a href="#stand">Stand</a></li>
+    <li><a href="#team">Team</a></li>
+    <li><a href="#schema">Schema</a></li>
+    <li><a href="#nieuws">Nieuws</a></li>
+    <!-- <li><a href="#galerij">Foto's</a></li> -->
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+  <button class="hamburger" id="hamburger" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+<div class="mobile-menu" id="mobileMenu">
+  <a href="#live" onclick="closeMobile()">🎯 Live Stand</a>
+  <a href="#stand" onclick="closeMobile()">🏆 Competitie Stand</a>
+  <a href="#team" onclick="closeMobile()">👥 Team Info</a>
+  <a href="#schema" onclick="closeMobile()">📅 Wedstrijdschema</a>
+  <a href="#nieuws" onclick="closeMobile()">📰 Nieuws</a>
+  <!-- <a href="#galerij" onclick="closeMobile()">📸 Foto Galerij</a> -->
+  <a href="#contact" onclick="closeMobile()">✉️ Contact</a>
+</div>
+
+<!-- ─── HERO ─── -->
+<section id="hero">
+  <div class="hero-inner container">
+    <div>
+      <div class="hero-badge fade-up">
+        🎯 Reguliere Competitie 2024–2025
+      </div>
+      <h1 class="hero-title fade-up delay-1">
+        No Skill<br/>Just <span>Luck</span>
+      </h1>
+      <p class="hero-subtitle fade-up delay-2">
+        Welkom bij NSJL – waar geluk harder werkt dan training, maar we toch elke week op komen dagen.
+      </p>
+      <p class="hero-tagline fade-up delay-2">
+        "We mikken op 180. We gooien 26. Maar we genieten van elke pijl." 🍺
+      </p>
+      <div class="hero-stats fade-up delay-3">
+        <div class="hero-stat">
+          <div class="hero-stat-num">2e</div>
+          <div class="hero-stat-label">Competitie stand</div>
+        </div>
+        <div class="hero-stat">
+          <div class="hero-stat-num">7</div>
+          <div class="hero-stat-label">Gewonnen</div>
+        </div>
+        <div class="hero-stat">
+          <div class="hero-stat-num">6</div>
+          <div class="hero-stat-label">Spelers</div>
+        </div>
+        <div class="hero-stat">
+          <div class="hero-stat-num">4x</div>
+          <div class="hero-stat-label">Hattrick</div>
+        </div>
+      </div>
+      <a href="#stand" class="hero-cta fade-up delay-4">
+        Bekijk de Stand →
+      </a>
+    </div>
+    <!-- 
+    <div class="hero-dart-wrap">
+      <svg width="280" height="280" viewBox="0 0 280 280" xmlns="http://www.w3.org/2000/svg">
+         outer ring 
+        <circle cx="140" cy="140" r="132" fill="#e8f0fe" stroke="#bfdbfe" stroke-width="3"/>
+        <circle cx="140" cy="140" r="110" fill="#fff" stroke="#bfdbfe" stroke-width="2"/>
+        <circle cx="140" cy="140" r="86"  fill="#e8f0fe" stroke="#bfdbfe" stroke-width="2"/>
+        <circle cx="140" cy="140" r="60"  fill="#fff" stroke="#bfdbfe" stroke-width="2"/>
+        <circle cx="140" cy="140" r="36"  fill="#dbeafe" stroke="#93c5fd" stroke-width="2"/>
+        <circle cx="140" cy="140" r="18"  fill="#2563eb" stroke="#1a3a8f" stroke-width="2"/>
+        <circle cx="140" cy="140" r="8"   fill="#f59e0b"/>
+         Dart 
+        <line x1="215" y1="65" x2="148" y2="133" stroke="#1a3a8f" stroke-width="4" stroke-linecap="round"/>
+        <polygon points="148,133 140,130 145,140" fill="#f59e0b"/>
+        <line x1="215" y1="65" x2="226" y2="54" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/>
+        <line x1="223" y1="58" x2="232" y2="52" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round"/>
+        <line x1="222" y1="62" x2="232" y2="60" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+    -->
+  </div>
+</section>
+
+<!-- ─── LIVE STAND ─── -->
+<section id="live">
+  <div class="container">
+    <div class="live-header">
+      <div class="live-dot"></div>
+      <span class="live-label">LIVE</span>
+      <h2 class="live-title-text">Wedstrijd Gaande</h2>
+    </div>
+    <div class="live-card">
+      <div class="live-match-meta">
+        Café Bar The Saloon &nbsp;|&nbsp; Competitie Ronde 11 &nbsp;|&nbsp; 28 mei 2025
+      </div>
+      <div class="live-scoreboard">
+        <div class="live-team">
+          <div class="live-team-name nsjl">NSJL</div>
+        </div>
+        <div class="live-score-box">
+          <div class="live-score">
+            <span id="scoreHome">5</span>
+            <span class="live-score-vs">–</span>
+            <span id="scoreAway">3</span>
+          </div>
+          <div class="live-leg-score">Legs gespeeld: 8 / 21</div>
+        </div>
+        <div class="live-team">
+          <div class="live-team-name">De Scherpe Pijlen</div>
+        </div>
+      </div>
+    <!--
+      <div class="live-players-grid">
+        <div class="live-player-row active">
+          <div>
+            <div class="lpr-name">🎯 Tom "The Tornado" Bakker</div>
+            <div style="font-size:.78rem;color:#93c5fd;font-weight:700;margin-top:.2rem;">Avg: 58.4 &nbsp;|&nbsp; Checkout: 40%</div>
+          </div>
+          <div class="lpr-left">124</div>
+        </div>
+        <div class="live-player-row">
+          <div>
+            <div class="lpr-name">Mike "The Magician" de Vries</div>
+            <div style="font-size:.78rem;color:#93c5fd;font-weight:700;margin-top:.2rem;">Avg: 52.1 &nbsp;|&nbsp; Checkout: 31%</div>
+          </div>
+          <div class="lpr-left">301</div>
+        </div>
+        <div class="live-player-row">
+          <div>
+            <div class="lpr-name">Sandra "Lucky Shot" Jansen</div>
+            <div style="font-size:.78rem;color:#93c5fd;font-weight:700;margin-top:.2rem;">Avg: 48.3 &nbsp;|&nbsp; Checkout: 28%</div>
+          </div>
+          <div class="lpr-left">✅ Gewonnen</div>
+        </div>
+        <div class="live-player-row">
+          <div>
+            <div class="lpr-name">Joost "Just Missed" Visser</div>
+            <div style="font-size:.78rem;color:#93c5fd;font-weight:700;margin-top:.2rem;">Avg: 50.0 &nbsp;|&nbsp; Checkout: 29%</div>
+          </div>
+          <div class="lpr-left">❌ Verloren</div>
+        </div>
+      </div>
+    </div>
+    <p style="text-align:center;margin-top:1.2rem;font-size:.82rem;color:rgba(255,255,255,.35);font-weight:600;">
+      💡 Pas de scores hierboven aan in de code om de live stand bij te werken
+    </p>
+    -->
+  </div>
+</section>
+
+<!-- ─── COMPETITIE STAND ─── -->
+<section id="stand">
+  <div class="container">
+    <h2 class="section-title">Competitie Stand</h2>
+    <p class="section-sub">Seizoen 2024 – 2025 · 3e Divisie</p>
+    <div class="stand-table-wrap">
+      <table class="stand-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Team</th>
+            <th>Win %</th>
+            <th>Games</th>
+            <th>Wins</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="pos-badge pos-1">1</span></td>
+            <td class="team-label">De Scherpe Pijlen</td>
+            <td>10</td><td>8</td><td>1</td>   
+          </tr>
+          <tr class="nsjl-row">
+            <td><span class="pos-badge pos-2">2</span></td>
+            <td class="team-label">NSJL <!--<span class="nsjl-tag">JIJ</span>--></td>
+            <td>10</td><td>7</td><td>1</td>
+          </tr>
+          <tr>
+            <td><span class="pos-badge pos-3">3</span></td>
+            <td class="team-label">Bullseye Boys</td>
+            <td>10</td><td>5</td><td>3</td>
+          </tr>
+          <tr>
+            <td><span class="pos-badge pos-other">4</span></td>
+            <td class="team-label">Triple Twenty</td>
+            <td>10</td><td>4</td><td>2</td>
+          </tr>
+          <tr>
+            <td><span class="pos-badge pos-other">5</span></td>
+            <td class="team-label">De Ongerichte Pijlen</td>
+            <td>10</td><td>3</td><td>1</td>
+          </tr>
+          <tr>
+            <td><span class="pos-badge pos-other">6</span></td>
+            <td class="team-label">180 of Niets</td>
+            <td>10</td><td>1</td><td>2</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <!--
+    <p style="margin-top:1rem;font-size:.8rem;color:var(--gray-500);font-weight:600;">
+      W = Gewonnen &nbsp;·&nbsp; G = Gelijkspel &nbsp;·&nbsp; V = Verloren
+    </p>
+    -->
+  </div>
+</section>
+
+<!-- ─── TEAM INFO ─── -->
+<section id="team">
+  <div class="container">
+    <h2 class="section-title">Ons Team</h2>
+    <p class="section-sub">6 dappere zielen. 0 garanties. Oneindig veel lol. 🎯</p>
+    <div class="players-grid">
+
+      <div class="player-card">
+        <!-- <div class="captain-badge">Aanvoerder</div> -->
+        <div class="player-avatar">TvB</div>
+        <h3 class="player-name">Tom Bakker</h3>
+        <div class="player-nick">"The Tornado"</div>
+        <div class="player-role">Kopspeler</div>
+        <div class="player-stats">
+          <div class="pstat">
+            <div class="pstat-val">55.6</div>
+            <div class="pstat-label">PPD</div>
+          </div>
+          <div class="pstat">
+            <div class="pstat-val">2.1</div>
+            <div class="pstat-label">MPR</div>
+          </div>
+          <div class="pstat">
+            <div class="pstat-val">2</div>
+            <div class="pstat-label">Wins</div>
+          </div>
+          <div class="pstat">
+            <div class="pstat-val">68</div>
+            <div class="pstat-label">Hats</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="player-card">
+        <div class="player-avatar">MdV</div>
+        <h3 class="player-name">Mike de Vries</h3>
+        <div class="player-nick">"The Magician"</div>
+        <div class="player-role">Veteraan</div>
+        <div class="player-stats">
+          <div class="pstat">
+            <div class="pstat-val">55.6</div>
+            <div class="pstat-label">PPD</div>
+          </div>
+          <div class="pstat">
+            <div class="pstat-val">2.1</div>
+            <div class="pstat-label">MPR</div>
+          </div>
+          <div class="pstat">
+            <div class="pstat-val">2</div>
+            <div class="pstat-label">Wins</div>
+          </div>
+          <div class="pstat">
+            <div class="pstat-val">68</div>
+            <div class="pstat-label">Hats</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="player-card">
+        <div class="player-avatar">SJ</div>
+        <h3 class="player-name">Sandra Jansen</h3>
+        <div class="player-nick">"Lucky Shot"</div>
+        <div class="player-role">Gelukkigste speler</div>
+        <div class="player-stats">
+          <div class="pstat">
+            <div class="pstat-val">55.6</div>
+            <div class="pstat-label">PPD</div>
+          </div>
+          <div class="pstat">
+            <div class="pstat-val">2.1</div>
+            <div class="pstat-label">MPR</div>
+          </div>
+          <div class="pstat">
+            <div class="pstat-val">2</div>
+            <div class="pstat-label">Wins</div>
+          </div>
+          <div class="pstat">
+            <div class="pstat-val">68</div>
+            <div class="pstat-label">Hats</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="player-card">
+        <div class="player-avatar">LP</div>
+        <h3 class="player-name">Lisa Peters</h3>
+        <div class="player-nick">"Last Minute"</div>
+        <div class="player-role">Comeback queen</div>
+        <div class="player-stats">
+          <div class="pstat">
+            <div class="pstat-val">55.6</div>
+            <div class="pstat-label">PPD</div>
+          </div>
+          <div class="pstat">
+            <div class="pstat-val">2.1</div>
+            <div class="pstat-label">MPR</div>
+          </div>
+          <div class="pstat">
+            <div class="pstat-val">2</div>
+            <div class="pstat-label">Wins</div>
+          </div>
+          <div class="pstat">
+            <div class="pstat-val">68</div>
+            <div class="pstat-label">Hats</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="player-card">
+        <div class="player-avatar">JV</div>
+        <h3 class="player-name">Joost Visser</h3>
+        <div class="player-nick">"Just Missed"</div>
+        <div class="player-role">Bijna-specialist</div>
+        <div class="player-stats">
+          <div class="pstat">
+            <div class="pstat-val">55.6</div>
+            <div class="pstat-label">PPD</div>
+          </div>
+          <div class="pstat">
+            <div class="pstat-val">2.1</div>
+            <div class="pstat-label">MPR</div>
+          </div>
+          <div class="pstat">
+            <div class="pstat-val">2</div>
+            <div class="pstat-label">Wins</div>
+          </div>
+          <div class="pstat">
+            <div class="pstat-val">68</div>
+            <div class="pstat-label">Hats</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="player-card">
+        <div class="player-avatar">RvD</div>
+        <h3 class="player-name">Roos van Dijk</h3>
+        <div class="player-nick">"Random"</div>
+        <div class="player-role">Verrassing van de week</div>
+        <div class="player-stats">
+          <div class="pstat">
+            <div class="pstat-val">55.6</div>
+            <div class="pstat-label">PPD</div>
+          </div>
+          <div class="pstat">
+            <div class="pstat-val">2.1</div>
+            <div class="pstat-label">MPR</div>
+          </div>
+          <div class="pstat">
+            <div class="pstat-val">2</div>
+            <div class="pstat-label">Wins</div>
+          </div>
+          <div class="pstat">
+            <div class="pstat-val">68</div>
+            <div class="pstat-label">Hats</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ─── WEDSTRIJDSCHEMA ─── -->
+<section id="schema">
+  <div class="container">
+    <h2 class="section-title">Wedstrijdschema</h2>
+    <p class="section-sub">Komende & gespeelde wedstrijden dit seizoen</p>
+    <div class="schema-grid">
+      <!-- Aankomend -->
+      <div>
+        <div class="schema-col-title">
+          <svg width="20" height="20" fill="none" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="4" width="16" height="14" rx="2" stroke="currentColor" stroke-width="1.8"/><line x1="6" y1="2" x2="6" y2="6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="14" y1="2" x2="14" y2="6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><line x1="2" y1="8" x2="18" y2="8" stroke="currentColor" stroke-width="1.8"/></svg>
+          Komende Wedstrijden
+        </div>
+        <div class="match-item">
+          <div class="match-date">📅 5 juni 2025 · 20:00</div>
+          <div class="match-teams"><span>NSJL</span> vs Triple Twenty</div>
+          <div class="match-location">📍 Café de Bullseye, Rotterdam</div>
+        </div>
+        <div class="match-item">
+          <div class="match-date">📅 12 juni 2025 · 19:30</div>
+          <div class="match-teams">Bullseye Boys vs <span>NSJL</span></div>
+          <div class="match-location">📍 Snookerhal 't Doelpunt, Rotterdam</div>
+        </div>
+        <div class="match-item">
+          <div class="match-date">📅 19 juni 2025 · 20:00</div>
+          <div class="match-teams"><span>NSJL</span> vs 180 of Niets</div>
+          <div class="match-location">📍 Café de Bullseye, Rotterdam</div>
+        </div>
+      </div>
+      <!-- Gespeeld -->
+      <div>
+        <div class="schema-col-title">
+          <svg width="20" height="20" fill="none" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M4 10l4 4 8-8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Gespeelde Wedstrijden
+        </div>
+        <div class="match-item">
+          <div class="match-date">✅ 22 mei 2025</div>
+          <div class="match-teams"><span>NSJL</span> vs De Ongerichte Pijlen</div>
+          <div class="match-location">📍 Café de Bullseye, Rotterdam</div>
+          <span class="match-result result-w">W 7 – 4</span>
+        </div>
+        <div class="match-item">
+          <div class="match-date">✅ 15 mei 2025</div>
+          <div class="match-teams">De Scherpe Pijlen vs <span>NSJL</span></div>
+          <div class="match-location">📍 Grand Café Pijl, Rotterdam</div>
+          <span class="match-result result-w">W 8 – 3</span>
+        </div>
+        <div class="match-item">
+          <div class="match-date">✅ 8 mei 2025</div>
+          <div class="match-teams"><span>NSJL</span> vs Triple Twenty</div>
+          <div class="match-location">📍 Café de Bullseye, Rotterdam</div>
+          <span class="match-result result-w">W 8 – 3</span>
+        </div>
+        <div class="match-item">
+          <div class="match-date">✅ 1 mei 2025</div>
+          <div class="match-teams">Bullseye Boys vs <span>NSJL</span></div>
+          <div class="match-location">📍 Snookerhal 't Doelpunt, Rotterdam</div>
+          <span class="match-result result-l">V 3 – 8</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── NIEUWS ─── -->
+<section id="nieuws">
+  <div class="container">
+    <h2 class="section-title">Nieuws & Updates</h2>
+    <p class="section-sub">Het laatste NSJL-nieuws, gebracht met de nodige dramatiek</p>
+    <div class="nieuws-grid">
+
+      <div class="nieuws-card">
+        <div class="nieuws-img" style="background:#dbeafe;font-size:3rem;">🏆</div>
+        <div class="nieuws-body">
+          <span class="nieuws-tag">Wedstrijdverslag</span>
+          <h3 class="nieuws-title">NSJL vernietigt De Ongerichte Pijlen met 7–4</h3>
+          <p class="nieuws-excerpt">In een avond vol spectaculaire moments – en één onverklaarbare 180 van Roos – pakte NSJL drie kostbare punten. Tom was onstuitbaar.</p>
+          <div class="nieuws-date">22 mei 2025</div>
+        </div>
+      </div>
+
+      <div class="nieuws-card">
+        <div class="nieuws-img" style="background:#fef3c7;font-size:3rem;">🎯</div>
+        <div class="nieuws-body">
+          <span class="nieuws-tag">Statistieken</span>
+          <h3 class="nieuws-title">Sandra gooit haar eerste 100+ checkout ooit</h3>
+          <p class="nieuws-excerpt">Na maanden oefenen (of gewoon geluk, het past bij de naam) gooide Sandra een ongelooflijke 110-checkout. Ze zei zelf: "Ik mik nooit."</p>
+          <div class="nieuws-date">14 mei 2025</div>
+        </div>
+      </div>
+
+      <div class="nieuws-card">
+        <div class="nieuws-img" style="background:#dcfce7;font-size:3rem;">📢</div>
+        <div class="nieuws-body">
+          <span class="nieuws-tag">Aankondiging</span>
+          <h3 class="nieuws-title">Nieuwe spelersavond elke dinsdag in Café de Bullseye</h3>
+          <p class="nieuws-excerpt">Wil je meedoen? Iedere dinsdag oefenen we samen vanaf 19:30. Beginners en gevorderden welkom. Bier is verplicht.</p>
+          <div class="nieuws-date">6 mei 2025</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ─── FOTO GALERIJ ─── -->
+<!--
+<section id="galerij">
+  <div class="container">
+    <h2 class="section-title">Foto Galerij</h2>
+    <p class="section-sub">Bewijs dat we er altijd hard voor gaan. Of in ieder geval de sfeer goed is.</p>
+    <div class="gallery-grid">
+      <div class="gallery-item">
+        <div class="gal-placeholder">🎯</div>
+        <div class="gallery-overlay"><span class="gallery-overlay-icon">🔍</span></div>
+      </div>
+      <div class="gallery-item">
+        <div class="gal-placeholder">🏆</div>
+        <div class="gallery-overlay"><span class="gallery-overlay-icon">🔍</span></div>
+      </div>
+      <div class="gallery-item">
+        <div class="gal-placeholder">🍺</div>
+        <div class="gallery-overlay"><span class="gallery-overlay-icon">🔍</span></div>
+      </div>
+      <div class="gallery-item">
+        <div class="gal-placeholder">🎉</div>
+        <div class="gallery-overlay"><span class="gallery-overlay-icon">🔍</span></div>
+      </div>
+      <div class="gallery-item">
+        <div class="gal-placeholder">🎯</div>
+        <div class="gallery-overlay"><span class="gallery-overlay-icon">🔍</span></div>
+      </div>
+      <div class="gallery-item">
+        <div class="gal-placeholder" style="background:#fef3c7;">📸</div>
+        <div class="gallery-overlay"><span class="gallery-overlay-icon">🔍</span></div>
+      </div>
+      <div class="gallery-item">
+        <div class="gal-placeholder" style="background:#dcfce7;">🤝</div>
+        <div class="gallery-overlay"><span class="gallery-overlay-icon">🔍</span></div>
+      </div>
+      <div class="gallery-item">
+        <div class="gal-placeholder" style="background:#fce7f3;">😅</div>
+        <div class="gallery-overlay"><span class="gallery-overlay-icon">🔍</span></div>
+      </div>
+    </div>
+    <p style="text-align:center;margin-top:1.4rem;font-size:.85rem;color:var(--gray-500);font-weight:600;">
+      💡 Vervang de emoji-tegels door <code>&lt;img src="jouw-foto.jpg"&gt;</code> om echte foto's toe te voegen
+    </p>
+  </div>
+</section>
+-->
+
+<!-- ─── CONTACT ─── -->
+<section id="contact">
+  <div class="container">
+    <div class="contact-grid">
+      <div class="contact-info">
+        <h2 class="section-title" style="color:var(--white);">Contact</h2>
+        <p>Vragen? Of gewoon even zeggen dat we geweldig zijn? Laat het ons weten!</p>
+        <div class="contact-items">
+          <div class="contact-item">
+            <div class="contact-item-icon">📍</div>
+            <div>
+              <div class="contact-item-label">Thuislocatie</div>
+              <div class="contact-item-val">Café Bar The Saloon, Reusel</div>
+            </div>
+          </div>
+          <!--
+          <div class="contact-item">
+            <div class="contact-item-icon">📅</div>
+            <div>
+              <div class="contact-item-label">Oefendag</div>
+              <div class="contact-item-val">Dinsdag vanaf 19:30</div>
+            </div>
+          </div>
+          -->
+          <div class="contact-item">
+            <div class="contact-item-icon">✉️</div>
+            <div>
+              <div class="contact-item-label">E-mail</div>
+              <div class="contact-item-val">info@nsjl.nl</div>
+            </div>
+          </div>
+          <!--
+          <div class="contact-item">
+            <div class="contact-item-icon">📱</div>
+            <div>
+              <div class="contact-item-label">Instagram</div>
+              <div class="contact-item-val">@nsjl_darts</div>
+            </div>
+          </div>
+          -->
+        </div>
+      </div>
+      <div class="contact-form">
+        <h3>Stuur een bericht</h3>
+
+        <form id="contactForm"
+                action="https://formspree.io/f/mdajbaba"
+                method="POST">
+
+            <div class="form-group">
+            <label>Je naam</label>
+            <input 
+                type="text"
+                name="naam"
+                placeholder="Bijv. Phil Taylor (maar dan minder goed)"
+                required
+            />
+            </div>
+
+            <div class="form-group">
+            <label>E-mailadres</label>
+            <input 
+                type="email"
+                name="email"
+                placeholder="jouw@email.nl"
+                required
+            />
+            </div>
+
+            <div class="form-group">
+            <label>Bericht</label>
+            <textarea 
+                rows="4"
+                name="bericht"
+                placeholder="Schrijf hier je bericht..."
+                required
+            ></textarea>
+            </div>
+
+            <button type="submit" class="form-submit">
+            Versturen 🎯
+            </button>
+        </form>
+        </div>
+      <!--
+      <div class="contact-form">
+        <h3>Stuur een bericht</h3>
+        <div class="form-group">
+          <label>Je naam</label>
+          <input type="text" placeholder="Bijv. Phil Taylor (maar dan minder goed)" />
+        </div>
+        <div class="form-group">
+          <label>E-mailadres</label>
+          <input type="email" placeholder="jouw@email.nl" />
+        </div>
+        <div class="form-group">
+          <label>Bericht</label>
+          <textarea rows="4" placeholder="Schrijf hier je bericht..."></textarea>
+        </div>
+        <button class="form-submit">Versturen 🎯</button>
+      </div>
+      -->
+    </div>
+  </div>
+</section>
+
+<!-- ─── FOOTER ─── -->
+<footer>
+  <p>© 2025 <span>NSJL – No Skill Just Luck</span> &nbsp;·&nbsp; 3e Divisie &nbsp;·&nbsp; Reusel &nbsp;·&nbsp; Gemaakt met een biertje</p>
+</footer>
+
+<!-- ─── JS ─── -->
+<script>
+  // Mobile menu
+  const btn = document.getElementById('hamburger');
+  const menu = document.getElementById('mobileMenu');
+  btn.addEventListener('click', () => menu.classList.toggle('open'));
+  function closeMobile() { menu.classList.remove('open'); }
+
+  // Scroll-triggered fade-up for non-hero sections
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.style.opacity = '1';
+        entry.target.style.transform = 'translateY(0)';
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.player-card, .match-item, .nieuws-card, .gallery-item').forEach(el => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(24px)';
+    el.style.transition = 'opacity .5s ease, transform .5s ease';
+    observer.observe(el);
+  });
+
+  // Active nav link highlight
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('.nav-links a');
+  window.addEventListener('scroll', () => {
+    let current = '';
+    sections.forEach(s => {
+      if (window.scrollY >= s.offsetTop - 80) current = s.id;
+    });
+    navLinks.forEach(a => {
+      a.style.color = a.getAttribute('href') === '#' + current ? 'var(--blue-500)' : '';
+      a.style.background = a.getAttribute('href') === '#' + current ? 'var(--blue-50)' : '';
+    });
+  });
+  /*
+  // Contact form feedback
+  document.querySelector('.form-submit').addEventListener('click', function() {
+    this.textContent = '✅ Verstuurd!';
+    this.style.background = 'var(--green)';
+    setTimeout(() => {
+      this.textContent = 'Versturen 🎯';
+      this.style.background = '';
+    }, 2500);
+  });
+  */
+
+  // Contact form feedback
+  const contactForm = document.getElementById('contactForm');
+
+  contactForm.addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const button = contactForm.querySelector('.form-submit');
+    const originalText = button.textContent;
+
+    button.disabled = true;
+    button.textContent = 'Versturen...';
+
+    try {
+      const response = await fetch(contactForm.action, {
+        method: 'POST',
+        body: new FormData(contactForm),
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        button.textContent = '✅ Verstuurd!';
+        button.style.background = 'var(--green)';
+        contactForm.reset();
+      } else {
+        button.textContent = '❌ Mislukt';
+        button.style.background = 'var(--red)';
+      }
+    } catch (error) {
+      button.textContent = '❌ Fout';
+      button.style.background = 'var(--red)';
+    }
+
+    setTimeout(() => {
+      button.disabled = false;
+      button.textContent = originalText;
+      button.style.background = '';
+    }, 3000);
+  });
+</script>
+</body>
+</html>
