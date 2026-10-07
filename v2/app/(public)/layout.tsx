@@ -1,3 +1,8 @@
-import {SiteHeader,SiteFooter} from '@/components/site-shell';
+import type {Metadata} from 'next';
+import {PublicHeader} from '@/components/public/header';
+import {PublicFooter} from '@/components/public/footer';
 import './public.css';
-export default function PublicLayout({children}:{children:React.ReactNode}){return <div className="public-site"><SiteHeader/>{process.env.DATABASE_MODE!=='postgres'&&<div className="dev-banner">V2 ontwikkelpreview · gecontroleerde bronmomentopname · geen realtime uitslagen</div>}{children}<SiteFooter/></div>;}
+export const metadata: Metadata = {openGraph: {title: 'NSJL — No Skill Just Luck', description: 'Waar geluk harder werkt dan training.', locale: 'nl_NL', type: 'website', images: [{url: '/img/logo-nsjl-blauw.png', alt: 'No Skill Just Luck'}]}};
+export default function PublicLayout({children}: {children: React.ReactNode}) {
+  return <div className="public-site"><PublicHeader/>{children}<PublicFooter/></div>;
+}

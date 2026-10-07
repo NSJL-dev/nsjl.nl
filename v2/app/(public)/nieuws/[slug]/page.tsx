@@ -1,9 +1,18 @@
 import Image from 'next/image';
-import {publicMediaUrl} from '@/lib/media';
 import {notFound} from 'next/navigation';
-import {getSiteData} from '@/lib/queries';
-import {SectionHead,dateNL} from '@/components/public-data-ui';
 import sanitizeHtml from 'sanitize-html';
-export const dynamic='force-dynamic';
-export async function generateMetadata({params}:{params:Promise<{slug:string}>}){const slug=(await params).slug,n=(await getSiteData()).news.find(n=>n.slug===slug);return{title:n?.title||'Nieuws',description:n?.excerpt,alternates:{canonical:`/nieuws/${slug}`}};}
-export default async function News({params}:{params:Promise<{slug:string}>}){const slug=(await params).slug,data=await getSiteData(),n=data.news.find(n=>n.slug===slug),media=data.media.find(m=>m.id===n?.featuredMediaId);if(!n)notFound();return <main className="wrap page-content narrow" id="main"><article><SectionHead eyebrow={`${n.category} · ${dateNL(n.publishedAt,true)}`} as="h1" title={n.title}/><p className="section-intro">{n.excerpt}</p>{media&&<Image className="article-image" src={publicMediaUrl(media.storagePath)} width={media.width??1200} height={media.height??800} alt={media.altText}/>}<div className="article-content" dangerouslySetInnerHTML={{__html:sanitizeHtml(n.content,{allowedTags:['p','br','strong','em','h2','h3','ul','ol','li','a'],allowedAttributes:{a:['href','title']},allowedSchemes:['https','mailto']})}}/></article></main>;}
+import {publicMediaUrl} from '@/lib/media';
+import {getPublicData} from '@/lib/public-data';
+import {Button, Page, SectionHeading} from '@/components/public/ui';
+import {dateNL} from '@/components/public/format';
+export const dynamic = 'force-dynamic';
+export async function generateMetadata({params}: {params: Promise<{slug: string}>}) {
+  const {slug} = await params, post = (await getPublicData()).news.find(n => n.slug === slug);
+  return {title: post?.title || 'Nieuws', description: post?.excerpt, alternates: {canonical: '/nieuws/' + slug}, openGraph: {title: post?.title, description: post?.excerpt, type: 'article', images: [{url: '/img/logo-nsjl-blauw.png'}]}};
+}
+export default async function NewsArticle({params}: {params: Promise<{slug: string}>}) {
+  const {slug} = await params, data = await getPublicData(), post = data.news.find(n => n.slug === slug);
+  if (!post) notFound();
+  const media = data.media.find(m => m.id === post.featuredMediaId);
+  return <Page narrow><article><SectionHeading as="h1" title={post.title} eyebrow={post.category}/><p className="pub-context-label"><time dateTime={post.publishedAt?.toISOString()}>{dateNL(post.publishedAt, true)}</time></p><p className="pub-intro">{post.excerpt}</p>{media && <Image className="pub-article-image" src={publicMediaUrl(media.storagePath)} width={media.width || 1200} height={media.height || 800} sizes="(max-width: 900px) 100vw, 820px" alt={media.altText}/>}<div className="pub-article" dangerouslySetInnerHTML={{__html: sanitizeHtml(post.content, {allowedTags: ['p', 'br', 'strong', 'em', 'h2', 'h3', 'ul', 'ol', 'li', 'a'], allowedAttributes: {a: ['href', 'title']}, allowedSchemes: ['https', 'mailto']})}}/></article><Button href="/nieuws" secondary>Alle nieuwsberichten</Button></Page>;
+}

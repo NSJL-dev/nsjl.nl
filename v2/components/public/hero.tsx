@@ -1,0 +1,7 @@
+import type {PublicData} from '@/lib/public-data';
+import {Button, Metric} from './ui';
+import {dateNL, numberNL} from './format';
+
+export function Hero({data}: {data: PublicData}) {
+  return <section className="pub-hero" aria-labelledby="hero-title"><div className="pub-container"><div className="pub-hero-copy"><p className="pub-badge"><span aria-hidden="true">🎯</span> {data.context ? `${data.context.competition} ${data.context.season}` : 'No Skill Just Luck · Reusel'}</p><h1 id="hero-title">No Skill<br/>Just <span>Luck</span></h1><p className="pub-hero-intro">{data.settings.hero_subtitle || 'Welkom bij NSJL – waar geluk harder werkt dan training, maar we toch elke week op komen dagen.'}</p><dl className="pub-hero-metrics"><Metric label="Competitiestand" value={data.nsjl?.position != null ? `${data.nsjl.position}e` : '—'}/><Metric label="Wedstrijden gespeeld" value={data.matches.some(m => m.status === 'completed') ? data.matches.filter(m => m.status === 'completed').length : '—'}/><Metric label="Gewonnen legs" value={data.nsjl?.winPercentage != null ? `${numberNL(data.nsjl.winPercentage, 1)}%` : '—'}/></dl><Button href="#stand">Bekijk de stand <span aria-hidden="true">→</span></Button>{data.next && <p className="pub-hero-next">Volgende wedstrijd: <strong>{dateNL(data.next.scheduledDate)} · {data.next.homeNsjl ? data.next.awayName : data.next.homeName}</strong></p>}</div></div></section>;
+}
