@@ -11,7 +11,7 @@ export async function getContexts(){
 }
 export async function getSiteData(contextId?:string){
   const db=await getDatabase(),contexts=await getContexts();const context=contexts.find(c=>c.id===contextId)||contexts.find(c=>c.competitionSlug==='bullshooter-regulier'&&c.isCurrent)||contexts[0];
-  if(!context)throw new Error('Migratie en seed zijn nog niet uitgevoerd.');
+  if(!context)throw new Error('Geen competitiecontext beschikbaar voor beheer.');
   const hts=alias(s.teamSeasons,'home_membership'),ats=alias(s.teamSeasons,'away_membership'),ht=alias(s.teams,'home_team'),at=alias(s.teams,'away_team');
   const [standingRows,matchRows,profiles,statRows,news,events,sponsors,settings,reports,runs,overrides,publishedMedia]=await Promise.all([
     db.select({id:s.standings.id,teamSeasonId:s.teamSeasons.id,name:s.teams.name,isNsjl:s.teamSeasons.isPrimaryNsjl,position:s.standings.position,games:s.standings.games,wins:s.standings.wins,losses:s.standings.losses,winPercentage:s.standings.winPercentage}).from(s.standings).innerJoin(s.teamSeasons,eq(s.standings.teamSeasonId,s.teamSeasons.id)).innerJoin(s.teams,eq(s.teamSeasons.teamId,s.teams.id)).where(eq(s.teamSeasons.divisionId,context.id)).orderBy(asc(s.standings.position)),

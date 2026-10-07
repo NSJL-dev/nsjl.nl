@@ -14,7 +14,7 @@ import NewsArticle from '@/app/(public)/nieuws/[slug]/page';
 import MatchDetail from '@/app/(public)/wedstrijden/[slug]/page';
 
 const mocks = vi.hoisted(() => ({data: vi.fn(), legacy: vi.fn(), match: vi.fn()}));
-vi.mock('@/lib/public-data', () => ({getPublicData: mocks.data, getLegacyProfileStats: mocks.legacy, findPublicMatch: mocks.match}));
+vi.mock('@/lib/public-data', () => ({getHomeData: mocks.data, getStandData: mocks.data, getMatchesData: mocks.data, getStatisticsData: mocks.data, getTeamData: mocks.data, getNewsData: mocks.data, getNewsArticleData: mocks.data, getPlayerData: mocks.data, getLegacyProfileStats: mocks.legacy, findPublicMatch: mocks.match}));
 vi.mock('next/navigation', () => ({notFound: () => {throw new Error('NEXT_NOT_FOUND');}}));
 function empty(): PublicData { return {context: null, contexts: [], media: [], standings: [], matches: [], profiles: [], teamProfiles: [], stats: [], news: [], events: [], sponsors: [], settings: {}, report: undefined, lastSync: undefined, next: undefined, latest: undefined, nsjl: undefined, today: '2026-10-07'}; }
 

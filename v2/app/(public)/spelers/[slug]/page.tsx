@@ -1,5 +1,5 @@
 import {notFound} from 'next/navigation';
-import {getLegacyProfileStats, getPublicData} from '@/lib/public-data';
+import {getLegacyProfileStats, getPlayerData, getPlayerProfile} from '@/lib/public-data';
 import {PlayerAvatar} from '@/components/public/players';
 import {PlayerStatistics} from '@/components/public/statistics';
 import {CompetitionSelector, ContextLabel, SourceStatus} from '@/components/public/competition';
@@ -7,11 +7,11 @@ import {Button, Page} from '@/components/public/ui';
 import {contextHref, numberNL} from '@/components/public/format';
 export const dynamic = 'force-dynamic';
 export async function generateMetadata({params}: {params: Promise<{slug: string}>}) {
-  const {slug} = await params, data = await getPublicData(), profile = data.profiles.find(p => p.slug === slug);
+  const {slug} = await params, profile = await getPlayerProfile(slug);
   return {title: profile?.displayName || 'Speler', description: profile?.bio, alternates: {canonical: '/spelers/' + slug}};
 }
 export default async function Player({params, searchParams}: {params: Promise<{slug: string}>; searchParams: Promise<{context?: string}>}) {
-  const {slug} = await params, data = await getPublicData((await searchParams).context), profile = data.profiles.find(p => p.slug === slug);
+  const {slug} = await params, data = await getPlayerData(slug, (await searchParams).context), profile = data.profiles.find(p => p.slug === slug);
   if (!profile) notFound();
   const stats = data.stats.find(row => row.stats.playerId === profile.id)?.stats, legacy = await getLegacyProfileStats(profile.id);
   const member = data.teamProfiles.some(p => p.id === profile.id);

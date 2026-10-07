@@ -6,7 +6,7 @@ import {eq} from 'drizzle-orm';
 import type {Database} from '@/db/client';
 import * as s from '@/db/schema';
 import {testDatabase} from './database';
-import {getLegacyProfileStats, getPublicData, selectPublicContext} from '@/lib/public-data';
+import {getLegacyProfileStats, getHomeData, getTeamData, getNewsData, selectPublicContext} from '@/lib/public-data';
 
 const state = vi.hoisted(() => ({db: undefined as Database | undefined}));
 vi.mock('@/db/client', () => ({getDatabase: async () => {
@@ -14,6 +14,11 @@ vi.mock('@/db/client', () => ({getDatabase: async () => {
   return state.db;
 }}));
 let seeded: Awaited<ReturnType<typeof testDatabase>>, empty: PGlite;
+// Preserve the original cross-page assertions using the new dedicated queries.
+async function getPublicData(requested?: string) {
+  const [home, team, news] = await Promise.all([getHomeData(requested), getTeamData(requested), getNewsData()]);
+  return {...home, profiles: team.profiles, teamProfiles: team.teamProfiles, news: news.news};
+}
 beforeAll(async () => { seeded = await testDatabase(); state.db = seeded.db; });
 afterAll(async () => { await seeded?.client.close(); await empty?.close(); });
 

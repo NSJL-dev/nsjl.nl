@@ -1,4 +1,4 @@
-import {getPublicData} from '@/lib/public-data';
+import {getHomeData} from '@/lib/public-data';
 import {Hero} from '@/components/public/hero';
 import {CompetitionSelector, ContextLabel, SourceStatus} from '@/components/public/competition';
 import {StandingsTable} from '@/components/public/standings';
@@ -11,7 +11,7 @@ import {contextHref} from '@/components/public/format';
 export const dynamic = 'force-dynamic';
 export const metadata = {alternates: {canonical: '/'}};
 export default async function Home({searchParams}: {searchParams: Promise<{context?: string}>}) {
-  const data = await getPublicData((await searchParams).context);
+  const data = await getHomeData((await searchParams).context);
   return <main id="main" tabIndex={-1}>
     <Hero data={data}/>
     <section id="stand" className="pub-section"><div className="pub-container"><SectionHeading title="Competitie Stand" href={contextHref('/stand', data)} linkLabel="Volledige stand"/><ContextLabel data={data}/><CompetitionSelector data={data} path="/"/><StandingsTable data={data}/><SourceStatus data={data}/></div></section>
