@@ -88,13 +88,11 @@ Voer dit zelf uit binnen uitsluitend `nsjl-v2-staging`; deel geen geheime waarde
    Controleer onder **Authentication → URL Configuration** dat **Site URL** de bestaande
    canonical staging-URL uit `APP_URL` is en dat de toegestane redirect die URL met
    `/auth/callback` bevat. Laat publieke signup uitgeschakeld. Wijzig Vercel-variabelen niet voor deze stappen.
-2. Controleer **Authentication → Email Templates**. De app verwerkt server-side `token_hash`;
-   standaard fragment-links met access_tokens zijn niet geschikt voor deze callback.
-   Gebruik voor **Invite user** als link:
-   `{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=invite`.
-   Gebruik voor **Reset password** als link:
-   `{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=recovery`.
-   Behoud de rest van het sjabloon. Als dit al correct is ingesteld, verander niets.
+2. Laat de standaard **Invite user**- en **Reset password**-templates met
+   `{{ .ConfirmationURL }}` staan. Custom SMTP of een aangepaste template is niet
+   nodig voor deze Auth-flow. De app ondersteunt zowel standaard fragment-links
+   als de bestaande `token_hash`-callback. De mailbeperkingen van het bestaande
+   Supabase-mailplan blijven gelden; er wordt geen SMTP-configuratie gewijzigd.
 3. Ga naar **Authentication → Users → Add user → Invite user** en nodig je eigen e-mailadres uit.
    Kies geen automatisch aangemaakt permanent wachtwoord. Open de ontvangen link nog niet.
 4. Open de nieuw uitgenodigde gebruiker, kopieer diens **User UID** en open **SQL Editor**
@@ -110,8 +108,16 @@ Voer dit zelf uit binnen uitsluitend `nsjl-v2-staging`; deel geen geheime waarde
 
    Controleer dat precies jouw uitgenodigde account nu in `public.users` staat.
    Dit is accountregistratie, geen schemawijziging. Er zijn geen secrets nodig in deze SQL.
-5. Open de uitnodiging in je eigen browser, stel je eigen unieke wachtwoord in en activeer
-   je authenticator op `/admin/mfa`. Voer OTP's alleen op de stagingwebsite in.
+5. Zorg dat je in de stagingbrowser bent uitgelogd. Open de uitnodiging in je eigen
+   browser. Een standaardlink vraagt eerst om bevestiging van het server-side
+   gecontroleerde e-mailadres: ga alleen verder als dit jouw eigen account is.
+   Stel je eigen unieke wachtwoord in en activeer je authenticator op `/admin/mfa`.
+   Voer OTP's alleen op de stagingwebsite in. Bij bestaande (ook verlopen) cookies:
+   gebruik **Uitloggen en maillink controleren**. De standaardmail is bij Supabase al
+   verbruikt, dus de app houdt deze tokens alleen in geheugen om na expliciet uitloggen
+   de huidige overdracht te vervolgen. Sluit/herlaad deze tab niet tijdens de overdracht;
+   vraag bij verloren tokens een nieuwe herstelmail aan. Bij een aangepaste `token_hash`-
+   link die vóór verificatie is geweigerd, kun je na uitloggen die oorspronkelijke link heropenen.
 6. Test login, AAL1-redirect naar MFA, succesvolle verificatie, dashboard, nieuwe tab/sessievernieuwing,
    wachtwoordherstel met behoud van MFA, logout en weigering van beheer na logout.
 7. Test een nieuwsconcept, bewerken, publiceren, intrekken/archiveren, profielbiografie,
@@ -127,3 +133,51 @@ nodig via **Authentication → Users → jouw gebruiker → MFA factors**. De ap
 geen automatische MFA-bypass of zelfbedachte recoverycodes.
 
 Stop na deze acceptatietest. Fase E/import, scheduler en productiecutover vereisen nieuwe toestemming.
+
+## Fix voor standaard Supabase-mails
+
+Basiscommit van deze fix: `7cc27997f6e6108d4d3fa70d5cd69ffdf724e7d4`.
+Er zijn geen nieuwe environment variables, migrations of service-instellingen nodig.
+
+- `/auth/callback` behoudt de server-side `verifyOtp(token_hash)`-flow. Een standaard
+  callback zonder querytoken gaat naar `/auth/voltooien`; browsers behouden hierbij
+  het fragment. Redirects naar de ingestelde Site URL worden ook door de bridge opgevangen.
+- De clientmodule verwijdert het fragment bij eerste uitvoering, vóór hydration of
+  requests. Tokens blijven uitsluitend tijdelijk in geheugen, nooit in browseropslag.
+  De bridge rendert zonder maillink niets en verandert de publieke vormgeving niet.
+- Alleen HTTPS (of expliciete localhost-development) en same-origin POST zijn toegestaan.
+  Een tijdelijke HttpOnly/Secure/SameSite=Strict CSRF-cookie en een aan de oorspronkelijke
+  tokens gebonden bevestigingscookie beschermen de tweestapsoverdracht.
+- De preview controleert de access-tokenidentiteit en het actieve adminregister en
+  toont het echte e-mailadres. Alleen een expliciete bevestiging activeert de sessie.
+  Een bestaande sessie wordt nooit stilzwijgend vervangen; eerst uitloggen is vereist.
+  De expliciete logoutknop gebruikt de bestaande beveiligde logout-POST en controleert
+  daarna dezelfde tijdelijk bewaarde mailtokens opnieuw; activering blijft een aparte klik.
+- Activering verifieert het access-token bij de vast geconfigureerde Supabase-server,
+  valideert het refresh-token en verifieert ook het vernieuwde access-token.
+  Subject, issuer en session ID moeten overeenkomen; verlopen tokens worden geweigerd.
+- Een atomische eenmalige sessieclaim en de audit worden in dezelfde DB-transactie
+  geschreven, voordat cookies worden geplaatst. Dit gebruikt uitsluitend de bestaande
+  server-only `rate_limits`-tabel, onder een eigen nooit resetbare `auth-mail-used`-namespace.
+  Geen schemawijziging. Ook een geroteerd tokenpaar van een al geactiveerde sessie wordt
+  geweigerd, onafhankelijk van Supabase's refresh-reusevenster.
+- De URL-waarde `type` is alleen een UI-hint. Ze verleent geen rol en wordt niet als
+  bewezen invite/recovery-actie geaudit. Alleen bevestigde actieve admins krijgen cookies.
+  Sessiecookies blijven HttpOnly/Secure/SameSite=Lax. AAL2 en bestaande MFA-factoren
+  blijven verplicht voor beheer en wachtwoordherstel.
+- Gevoelige responses zijn private/no-store en no-referrer. De bestaande CSP blijft intact.
+  Providerfouten, tokens, wachtwoorden en OTP's komen niet in responses, audit of logs.
+
+Lokale tests gebruiken gemockte Auth-requests en echte tijdelijke PGlite-transacties.
+Er is geen staging-account gemaakt, mail verstuurd of live Supabase-data gewijzigd.
+Persoonlijke invite/recovery, browserfocus en MFA moeten na de nieuwe Vercel-build nog
+door de eigenaar op staging worden geaccepteerd; de lokale tests bewijzen die E2E niet.
+
+Controle van deze fix: **typecheck PASS, lint PASS, 333 tests in 19 bestanden PASS**.
+Dat zijn 81 extra tests boven de basiscommit: server-mailhandoff 47, fragmentopvang 16,
+clientflow 14 en vier aanvullende checks in de bestaande Auth-suite.
+Secrets-check en scope-check PASS; publieke componenten/databinding, schema, migrations,
+seed en serviceconfiguratie zijn ongewijzigd (alleen de inactieve Auth-bridge is aan de rootlayout toegevoegd).
+Normale `npm run build` opnieuw **FAIL uitsluitend met `uv_resident_set_memory`** in
+de lokale sandbox; geen geheugenadapter of aangepast buildcommando gebruikt.
+De eigenaar moet de echte Vercel-build en runtime van de fix bevestigen vóór accountactivatie.

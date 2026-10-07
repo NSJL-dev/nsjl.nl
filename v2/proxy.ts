@@ -10,7 +10,8 @@ export async function proxy(request: NextRequest) {
   const next = () => {
     const headers=new Headers(request.headers);headers.set('x-nonce',nonce);headers.set('Content-Security-Policy',csp);
     const response=NextResponse.next({request:{headers}});response.headers.set('Content-Security-Policy',csp);
-    if(path.startsWith('/admin')||path.startsWith('/api'))response.headers.set('Cache-Control','private, no-store');return response;
+    if(path.startsWith('/admin')||path.startsWith('/api')||path.startsWith('/auth/'))response.headers.set('Cache-Control','private, no-store');
+    if(path.startsWith('/auth/'))response.headers.set('Referrer-Policy','no-referrer');return response;
   };
   // Keep the approved public CSP unchanged; only protected paths refresh sessions.
   if(!(path.startsWith('/admin')||path.startsWith('/api/admin/')||path.startsWith('/api/auth/mfa')||path==='/api/auth/password'))return next();

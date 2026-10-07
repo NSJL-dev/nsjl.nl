@@ -1,0 +1,5 @@
+.dialog{border:0;padding:0;background:transparent;color:inherit;max-width:min(460px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto}
+.dialog::backdrop{background:rgb(4 10 18 / 90%)}
+.dialog :global(.auth-card){width:100%;margin:0;box-sizing:border-box}
+.dialog :global(.button){margin-top:16px;min-height:44px}
+.dialog strong{overflow-wrap:anywhere}
