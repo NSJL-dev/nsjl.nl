@@ -1,0 +1,210 @@
+{
+  "origin": "index.html",
+  "competition": "Zomercompetitie",
+  "season": "2026",
+  "hero": "Welkom bij NSJL – waar geluk harder werkt dan training, maar we toch elke week op komen dagen.",
+  "players": [
+    {
+      "name": "Tim Goossens",
+      "stats": {
+        "PPD": 26.14,
+        "MPR": 3.23,
+        "Wins": 25,
+        "Hats": 11
+      },
+      "sortOrder": 0
+    },
+    {
+      "name": "Mike van de Voort",
+      "stats": {
+        "PPD": 15.78,
+        "MPR": 1.79,
+        "Wins": 15,
+        "Hats": 1
+      },
+      "sortOrder": 1
+    },
+    {
+      "name": "Colin Tielemans",
+      "stats": {
+        "PPD": 21.64,
+        "MPR": 2.38,
+        "Wins": 19,
+        "Hats": 7
+      },
+      "sortOrder": 2
+    },
+    {
+      "name": "Job van de Voort",
+      "stats": {
+        "PPD": 15.01,
+        "MPR": 1.75,
+        "Wins": 10,
+        "Hats": 0
+      },
+      "sortOrder": 3
+    }
+  ],
+  "standings": [
+    {
+      "position": 1,
+      "team": "Dennis en Frank",
+      "games": 180,
+      "wins": 154,
+      "losses": 26
+    },
+    {
+      "position": 2,
+      "team": "David en Rob",
+      "games": 160,
+      "wins": 137,
+      "losses": 23
+    },
+    {
+      "position": 3,
+      "team": "Youri en Richard",
+      "games": 190,
+      "wins": 131,
+      "losses": 59
+    },
+    {
+      "position": 4,
+      "team": "Jorn en Rik",
+      "games": 160,
+      "wins": 130,
+      "losses": 30
+    },
+    {
+      "position": 5,
+      "team": "Lotte en Toon",
+      "games": 160,
+      "wins": 107,
+      "losses": 53
+    },
+    {
+      "position": 6,
+      "team": "Twan en Barry",
+      "games": 170,
+      "wins": 95,
+      "losses": 75
+    },
+    {
+      "position": 7,
+      "team": "Linda en Berry",
+      "games": 150,
+      "wins": 93,
+      "losses": 57
+    },
+    {
+      "position": 8,
+      "team": "Ad en Nick",
+      "games": 150,
+      "wins": 90,
+      "losses": 60
+    },
+    {
+      "position": 9,
+      "team": "Hans en Erwin",
+      "games": 170,
+      "wins": 82,
+      "losses": 88
+    },
+    {
+      "position": 10,
+      "team": "Lorenzo en Bryan",
+      "games": 140,
+      "wins": 80,
+      "losses": 60
+    },
+    {
+      "position": 11,
+      "team": "Michiel en Willem",
+      "games": 140,
+      "wins": 79,
+      "losses": 61
+    },
+    {
+      "position": 12,
+      "team": "Marco en Adrian",
+      "games": 170,
+      "wins": 73,
+      "losses": 97
+    },
+    {
+      "position": 13,
+      "team": "Tim en Mike",
+      "games": 160,
+      "wins": 69,
+      "losses": 91
+    },
+    {
+      "position": 14,
+      "team": "Jan en Ad",
+      "games": 140,
+      "wins": 54,
+      "losses": 86
+    },
+    {
+      "position": 15,
+      "team": "Boi en Peter",
+      "games": 150,
+      "wins": 42,
+      "losses": 108
+    },
+    {
+      "position": 16,
+      "team": "Brodney en Bjorn",
+      "games": 150,
+      "wins": 42,
+      "losses": 108
+    },
+    {
+      "position": 17,
+      "team": "Tom en Bart",
+      "games": 130,
+      "wins": 33,
+      "losses": 97
+    },
+    {
+      "position": 18,
+      "team": "Stef en Sjef",
+      "games": 150,
+      "wins": 30,
+      "losses": 120
+    },
+    {
+      "position": 19,
+      "team": "Imke en Mijs",
+      "games": 150,
+      "wins": 29,
+      "losses": 121
+    },
+    {
+      "position": 20,
+      "team": "Thijs en Jordi",
+      "games": 150,
+      "wins": 10,
+      "losses": 140
+    }
+  ],
+  "news": [
+    {
+      "title": "NSJL wint met 9-1",
+      "excerpt": "NSJL heeft deze week met maar liefst 9-1 gewonnen! Helaas ook met 8-2 verloren, maar daar hebben we het maar niet over.",
+      "category": "Wedstrijdverslag",
+      "date": "17 juli 2026"
+    },
+    {
+      "title": "69... Nice!",
+      "excerpt": "Na de winst van deze week staat NSJL nu op 69 overwinningen 😏.",
+      "category": "Statistieken",
+      "date": "17 juli 2026"
+    },
+    {
+      "title": "30 Juli geen wedstrijden",
+      "excerpt": "Volgende week (30 juli) zullen er geen wedstrijden plaatsvinden van NSJL. 6 Augustus zullen de laatste 2 wedstijden van de zomercompetitie gespeeld worden.",
+      "category": "Aankondiging",
+      "date": "23 juli 2026"
+    }
+  ]
+}

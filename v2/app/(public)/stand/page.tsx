@@ -1,0 +1,4 @@
+import {getSiteData} from '@/lib/queries';
+import {ContextSelect,SectionHead,StandTable,SourceNote} from '@/components/data-ui';
+export const dynamic='force-dynamic';export const metadata={title:'Competitiestand',alternates:{canonical:'/stand'}};
+export default async function Stand({searchParams}:{searchParams:Promise<{context?:string}>}){const data=await getSiteData((await searchParams).context);return <main className="wrap page-content" id="main"><SectionHead eyebrow="DE COMPETITIE" title="Competitiestand."/><ContextSelect data={data} path="/stand"/><p className="section-intro">{data.context.competition} · {data.context.season} · {data.context.division}</p><StandTable data={data}/><SourceNote data={data}/><p className="notice">Games en wins zijn gespeelde en gewonnen legs. De positie volgt de bronvolgorde; teams zonder verwerkte uitslag kunnen nog ontbreken.</p></main>;}
