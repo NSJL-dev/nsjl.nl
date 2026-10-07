@@ -1,6 +1,9 @@
 import { timingSafeEqual, createHash } from 'node:crypto';
 export class AccessError extends Error{constructor(public status:number,message:string){super(message);}}
-export function assertOrigin(origin:string|null,appUrl:string){if(!origin||new URL(origin).origin!==new URL(appUrl).origin)throw new AccessError(403,'Ongeldige aanvraagherkomst');}
+export function assertOrigin(origin:string|null,appUrl:string){
+  try{if(origin&&new URL(origin).origin===new URL(appUrl).origin)return;}catch{/* Malformed or opaque Origin is denied. */}
+  throw new AccessError(403,'Ongeldige aanvraagherkomst');
+}
 export function secretMatches(actual:string|null,expected:string|undefined){
   if(!expected||expected.length<32||!actual)return false;
   const a=Buffer.from(actual),b=Buffer.from(`Bearer ${expected}`);return a.length===b.length&&timingSafeEqual(a,b);

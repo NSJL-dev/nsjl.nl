@@ -1,0 +1,24 @@
+import {beforeAll,afterAll,beforeEach,afterEach,describe,it,expect,vi} from 'vitest';
+import {renderToStaticMarkup} from 'react-dom/server';
+import {createElement} from 'react';
+import {testDatabase} from './database';
+import * as s from '@/db/schema';
+const mocks=vi.hoisted(()=>({database:vi.fn(),admin:vi.fn(),identity:vi.fn()}));
+vi.mock('@/db/client',()=>({getDatabase:mocks.database}));
+vi.mock('@/lib/auth',()=>({requireAdmin:mocks.admin,authenticatedClient:mocks.identity}));
+vi.mock('next/navigation',()=>({redirect:(url:string)=>{throw new Error(`REDIRECT:${url}`);},notFound:()=>{throw new Error('NOT_FOUND');}}));
+import Dashboard from '@/app/admin/(protected)/page';
+import Section from '@/app/admin/(protected)/[section]/page';
+import Layout from '@/app/admin/(protected)/layout';
+let c:Awaited<ReturnType<typeof testDatabase>>;
+beforeAll(async()=>{c=await testDatabase();mocks.database.mockResolvedValue(c.db);});
+afterAll(async()=>{await c?.client.close();});
+beforeEach(()=>{for(const [key,value]of Object.entries({APP_ENV:'development',APP_URL:'http://localhost:3000',DATABASE_MODE:'local',SYNC_ENABLED:'false'}))vi.stubEnv(key,value);vi.stubEnv('VERCEL',undefined);mocks.admin.mockResolvedValue({user:{id:'fixture'},profile:{name:'Fixture admin'}});mocks.identity.mockResolvedValue({profile:{name:'Fixture admin'}});});
+afterEach(()=>{vi.unstubAllEnvs();});
+describe('Admin SSR regression coverage with the real seeded PostgreSQL schema',()=>{
+  it('dashboard renders empty regular data and disabled sync without fetching a provider',async()=>{const html=renderToStaticMarkup(await Dashboard());expect(html).toContain('Nog niet gesynchroniseerd');expect(html).toContain('disabled');expect(await c.db.select().from(s.sourceReports)).toHaveLength(0);expect(await c.db.select().from(s.syncRuns)).toHaveLength(0);});
+  it.each(['synchronisatie','spelers','wedstrijden','stand','statistieken','nieuws','agenda','media','sponsors','instellingen','audit'])('%s management page renders safely with staging seed data',async section=>{const html=renderToStaticMarkup(await Section({params:Promise.resolve({section}),searchParams:Promise.resolve({})}));expect(html).toContain('<h1>');expect(html).not.toContain('Migratie en seed');});
+  it('anonymous protected layout redirects to login',async()=>{mocks.identity.mockRejectedValueOnce(new Error('Expired'));await expect(Layout({children:createElement('p',null,'Beheer')})).rejects.toThrow('REDIRECT:/admin/login');});
+  it('AAL1 protected layout redirects to MFA',async()=>{mocks.admin.mockRejectedValueOnce(new Error('MFA required'));await expect(Layout({children:createElement('p',null,'Beheer')})).rejects.toThrow('REDIRECT:/admin/mfa');});
+  it('verified layout includes desktop and mobile management navigation',async()=>{const html=renderToStaticMarkup(await Layout({children:createElement('p',null,'Beheer')}));expect(html).toContain('aria-label="Mobiel beheer"');expect(html).toContain('/admin/audit');expect(html).toContain('/admin/wachtwoord');});
+});

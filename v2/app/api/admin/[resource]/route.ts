@@ -11,7 +11,7 @@ export async function POST(request:Request,{params}:{params:Promise<{resource:st
   try{
     assertOrigin(request.headers.get('origin'),readEnv().APP_URL);const {user}=await requireAdmin(true),db=await getDatabase();await enforceRateLimit(db,'admin-write',user.id,60,60);
     const form=Object.fromEntries(await request.formData());await adminMutation(db,user.id,resource,form);
-    for(const p of ['/','/stand','/wedstrijden','/statistieken','/nieuws','/spelers','/admin'])revalidatePath(p,'layout');
-    const back=resource==='bronconfiguratie'?'/admin/synchronisatie':resource==='koppelingen'?'/admin/spelers/koppelingen':`/admin/${resource}`;return NextResponse.redirect(new URL(`${back}?message=Opgeslagen`,request.url),303);
+    for(const p of ['/','/stand','/wedstrijden','/statistieken','/nieuws','/spelers','/team','/admin'])revalidatePath(p,'layout');
+    const back=resource==='bronconfiguratie'?'/admin/synchronisatie':resource==='koppelingen'?'/admin/spelers/koppelingen':`/admin/${resource}`;const response=NextResponse.redirect(new URL(`${back}?message=Opgeslagen`,request.url),303);response.headers.set('Cache-Control','private, no-store');return response;
   }catch(error){return NextResponse.json({error:error instanceof AccessError?error.message:'Opslaan mislukt. Controleer de velden en eventuele dubbele koppelingen.'},{status:error instanceof AccessError?error.status:400,headers:{'Cache-Control':'no-store'}});}
 }

@@ -4,7 +4,7 @@ import {storageClient} from '../lib/media';
 import {getDatabase} from '../db/client';
 import {users} from '../db/schema';
 import {readEnv} from '../lib/env';
-stagingOnly();const email=z.email().parse(process.argv[2]),name=z.string().min(1).parse(process.argv[3]||'NSJL beheerder');
+stagingOnly();const email=z.email().parse(process.argv[2]).toLowerCase(),name=z.string().min(1).parse(process.argv[3]||'NSJL beheerder');
 const client=storageClient(),env=readEnv();
 const {data,error}=await client.auth.admin.inviteUserByEmail(email,{redirectTo:`${env.APP_URL}/auth/callback`});
 if(error||!data.user)throw new Error('Invite mislukt. Controleer Auth, SMTP, redirect en of het account al bestaat.');
