@@ -3,7 +3,7 @@ import Link from 'next/link';
 import {usePathname} from 'next/navigation';
 import {useEffect, useRef, useState} from 'react';
 
-const links = [['/', 'Home'], ['/stand', 'Stand'], ['/wedstrijden', 'Wedstrijden'], ['/statistieken', 'Statistieken'], ['/team', 'Team'], ['/agenda', 'Agenda'], ['/nieuws', 'Nieuws'], ['/#contact', 'Contact']] as const;
+const links = [['/', 'Home'], ['/stand', 'Stand'], ['/wedstrijden', 'Wedstrijden'], ['/statistieken', 'Statistieken'], ['/team', 'Team'], ['/agenda', 'Agenda'], ['/nieuws', 'Nieuws'], ['/sponsors', 'Sponsors'], ['/#contact', 'Contact']] as const;
 export function PublicNavigation() {
   const [open, setOpen] = useState(false), trigger = useRef<HTMLButtonElement>(null), menu = useRef<HTMLElement>(null);
   const pathname = usePathname();

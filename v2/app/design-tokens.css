@@ -1,0 +1,8 @@
+/* Shared NSJL identity; components stay scoped to public/admin wrappers. */
+:root {
+  --nsjl-navy: #0c1f4a; --nsjl-blue: #2563eb; --nsjl-blue-dark: #1d4ed8;
+  --nsjl-gold: #f59e0b; --nsjl-text: #17243b; --nsjl-muted: #536176;
+  --nsjl-soft: #eff6ff; --nsjl-line: #d9e5f5; --nsjl-white: #fff;
+  --nsjl-radius: 12px; --nsjl-shadow: 0 4px 24px rgb(37 99 235 / 8%);
+  --nsjl-body-font: 'Nunito', sans-serif; --nsjl-heading-font: 'Bebas Neue', Impact, sans-serif;
+}

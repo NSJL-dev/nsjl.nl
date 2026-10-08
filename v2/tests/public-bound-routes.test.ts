@@ -16,6 +16,7 @@ import Statistics from '@/app/(public)/statistieken/page';
 import Team from '@/app/(public)/team/page';
 import News from '@/app/(public)/nieuws/page';
 import Agenda from '@/app/(public)/agenda/page';
+import Sponsors from '@/app/(public)/sponsors/page';
 import Privacy from '@/app/(public)/privacy/page';
 import Player from '@/app/(public)/spelers/[slug]/page';
 import NewsArticle from '@/app/(public)/nieuws/[slug]/page';
@@ -45,6 +46,7 @@ const routes = [
   ['/team', () => Team({searchParams: Promise.resolve({})})],
   ['/nieuws', () => News()],
   ['/agenda', () => Agenda()],
+  ['/sponsors', () => Sponsors()],
   ['/privacy', () => Privacy()],
 ] as const;
 describe('Public routes with actual SQL queries and partial or absent content', () => {

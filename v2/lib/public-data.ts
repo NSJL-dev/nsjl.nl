@@ -151,6 +151,16 @@ export const getNewsData = cache(async (): Promise<PublicData> => {
   const news = await readNews();
   return {...base(), news, media: await readMedia(news.map(n => n.featuredMediaId))};
 });
+
+// Editorial sponsors do not need competition data, player data or sync history.
+export const getSponsorsData = cache(async () => {
+  const sponsors = await (await getDatabase()).select({
+    id: s.sponsors.id, name: s.sponsors.name, description: s.sponsors.description,
+    websiteUrl: s.sponsors.websiteUrl, logoMediaId: s.sponsors.logoMediaId, sortOrder: s.sponsors.sortOrder,
+  }).from(s.sponsors).where(eq(s.sponsors.isActive, true)).orderBy(asc(s.sponsors.sortOrder), asc(s.sponsors.name), asc(s.sponsors.id));
+  return {sponsors, media: await readMedia(sponsors.map(sponsor => sponsor.logoMediaId))};
+});
+export type PublicSponsorsData = Awaited<ReturnType<typeof getSponsorsData>>;
 // Active agenda records are public in the existing model. Do not expose creator
 // IDs, administration timestamps or unrelated competition/admin data.
 export const getAgendaData = cache(async () => (await getDatabase()).select({

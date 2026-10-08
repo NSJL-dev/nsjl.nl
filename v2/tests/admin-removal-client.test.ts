@@ -48,19 +48,19 @@ describe('Named confirmation and double-click protection', () => {
     fetcher.mockRejectedValueOnce(new Error('Fixture offline')).mockResolvedValueOnce(redirectResponse()); const form = submitter();
     await form.submit(); await form.submit(); expect(fetcher).toHaveBeenCalledTimes(2); expect(assign).toHaveBeenCalledTimes(1);
   });
-  it.each(['nieuws', 'agenda', 'sponsors', 'spelers'] as const)('%s archive action includes the exact name and revision, with an inert no-JS button', resource => {
+  it.each(['nieuws', 'agenda', 'sponsors', 'spelers'] as const)('%s archive preserves named confirmation and gates permanent removal', resource => {
     const props = {resource, id: crypto.randomUUID(), name: '<script>Fixture name</script>', revision: 'a'.repeat(64), archived: false};
-    const tree = RecordActions(props)! as ReactElement<{children: ReactElement[]}>;
-    const form = tree.props.children.find(child => child && child.type === AdminForm)! as ReactElement<{confirmation: string}>;
-    expect(form.props.confirmation).toContain(props.name); expect(form.props.confirmation).toContain('blijven bewaard');
     const $ = load(renderToStaticMarkup(createElement(RecordActions, props)));
-    expect($('button').attr('type')).toBe('button'); expect($('button').text()).toBe('Archiveren'); expect($('script')).toHaveLength(0);
-    expect($('input[name=confirmedName]').attr('value')).toBe(props.name); expect($('input[name=expectedRevision]').attr('value')).toBe(props.revision);
-    expect($('input[name=action]').attr('value')).toBe('archive'); expect($.text()).not.toContain('Definitief verwijderen');
+    const archive = $('form').filter((_, node) => $(node).find('input[name=action]').attr('value') === 'archive');
+    expect(archive.find('button').attr('type')).toBe('button'); expect(archive.find('button').text()).toBe('Archiveren'); expect($('script')).toHaveLength(0);
+    expect(archive.find('input[name=confirmedName]').attr('value')).toBe(props.name); expect(archive.find('input[name=expectedRevision]').attr('value')).toBe(props.revision);
+    expect($('.delete-zone > button').attr('disabled')).toBeDefined(); expect($.text()).toContain('Archiveer dit item eerst');
   });
-  it('only archived players get the distinct irreversible delete action', () => {
+  it('archived players require typed confirmation and preserve the dependency warning', () => {
     const $ = load(renderToStaticMarkup(createElement(RecordActions, {resource: 'spelers', id: crypto.randomUUID(), name: 'Fixture profiel', revision: 'a'.repeat(64), archived: true})));
-    expect($('button').text()).toBe('Definitief verwijderen'); expect($('input[name=action]').attr('value')).toBe('delete'); expect($.text()).toContain('zonder lidmaatschappen');
+    expect($('.delete-zone > button').text()).toBe('Definitief verwijderen'); expect($('input[name=action]').attr('value')).toBe('delete'); expect($.text()).toContain('zonder lidmaatschappen');
+    expect($('dialog').attr('aria-labelledby')).toBeDefined(); expect($('input[name=typedName]').attr('required')).toBeDefined(); expect($('input[name=typedName]').attr('value')).toBe('');
+    expect($('button[type=submit]').attr('disabled')).toBeDefined(); expect($('button[autofocus]').text()).toBe('Annuleren');
   });
   it.each(['status', 'isActive'] as const)('archiving through an editor field %s also requires named confirmation', async field => {
     state.fields = field === 'status' ? {status: 'archived'} : {}; fetcher.mockResolvedValue(redirectResponse());
@@ -74,8 +74,21 @@ describe('Named confirmation and double-click protection', () => {
   it('canceling an archive selected through an editor also performs no write', async () => {
     state.fields = {status: 'archived'}; confirm.mockReturnValue(false); await submitter('', {field: 'status', name: 'Fixture item'}).submit(); expect(fetcher).not.toHaveBeenCalled();
   });
-  it.each(['nieuws', 'agenda', 'sponsors'] as const)('archived %s preserves the item and offers no permanent delete form', resource => {
+  it.each(['nieuws', 'agenda', 'sponsors', 'media', 'wedstrijden'] as const)('archived %s has a separate typed permanent removal action', resource => {
     const $ = load(renderToStaticMarkup(createElement(RecordActions, {resource, id: crypto.randomUUID(), name: 'Fixture item', revision: 'a'.repeat(64), archived: true})));
-    expect($('form,button')).toHaveLength(0); expect($.text()).toContain('Gearchiveerd'); expect($.text()).toContain('blijven bewaard');
+    expect($('.delete-zone > button').attr('disabled')).toBeUndefined(); expect($('dialog')).toHaveLength(1); expect($('input[name=action]').attr('value')).toBe('delete'); expect($('input[name=typedName]').attr('value')).toBe('');
+    expect($.text()).toContain('niet ongedaan'); expect($('button[type=submit]').attr('disabled')).toBeDefined();
+  });
+  it.each(['', 'wrong', 'Fixture profiel '])('typed confirmation %s is rejected client-side before a request', async typedName => {
+    state.fields = {action:'delete', typedName};
+    const tree = AdminForm({action:'/api/admin/spelers', typedConfirmation:'Fixture profiel', children:createElement('button',null,'Verwijderen')}) as ReactElement<{onSubmit:(event:FormEvent<HTMLFormElement>)=>Promise<void>}>;
+    await tree.props.onSubmit({preventDefault:vi.fn(),currentTarget:{}} as unknown as FormEvent<HTMLFormElement>);
+    expect(fetcher).not.toHaveBeenCalled(); expect(state.updates).toContain('Typ de naam exact over om deze actie te bevestigen.');
+  });
+  it('a correct typed confirmation sends one POST without a redundant native dialog', async () => {
+    state.fields = {action:'delete',typedName:'Fixture profiel'};fetcher.mockResolvedValue(redirectResponse());
+    const tree = AdminForm({action:'/api/admin/spelers',typedConfirmation:'Fixture profiel',children:createElement('button',null,'Verwijderen')}) as ReactElement<{onSubmit:(event:FormEvent<HTMLFormElement>)=>Promise<void>}>;
+    const event = {preventDefault:vi.fn(),currentTarget:{}} as unknown as FormEvent<HTMLFormElement>;await tree.props.onSubmit(event);
+    expect(fetcher).toHaveBeenCalledTimes(1);expect(confirm).not.toHaveBeenCalled();expect((fetcher.mock.calls[0][1].body as FormData).get('typedName')).toBe('Fixture profiel');
   });
 });

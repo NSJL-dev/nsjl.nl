@@ -9,7 +9,8 @@ import {AccessError} from '@/lib/security';
 import {changeMedia} from '@/lib/media';
 import {assertAdminActor} from './authorization';
 import {readEnv} from '@/lib/env';
-import {isManagedResource,lockManagedRecord,assertRecordRevision,assertRecordConfirmation,recordArchived,deleteUnlinkedPlayer} from './record-guard';
+import {isManagedResource,lockManagedRecord,assertRecordRevision,assertRecordConfirmation,assertTypedConfirmation,recordArchived,deleteEditorialRecord,detachMedia} from './record-guard';
+import {deleteMedia} from './media-deletion';
 const uuid=z.uuid();const short=z.string().trim().min(1).max(150);const text=z.string().max(30000);const url=z.url().refine(v=>['https:','http:'].includes(new URL(v).protocol));
 const optionalUuid=z.preprocess(v=>v===''?undefined:v,uuid.optional());
 const isoDate=z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(v=>{const d=new Date(`${v}T12:00:00Z`);return !Number.isNaN(d.valueOf())&&d.toISOString().slice(0,10)===v;});
@@ -21,12 +22,28 @@ const schemas={
 };
 export async function adminMutation(db:Database,actorId:string,resource:string,form:Record<string,unknown>){
   await assertAdminActor(db,actorId);
-  const action=z.enum(['save','archive','delete']).parse(form.action||'save'),recordId=form.id?uuid.parse(form.id):undefined;
+  try { await applyMutation(db,actorId,resource,form); }
+  catch (error) {
+    // The failed transaction is already rolled back. Never log names, submitted
+    // content, tokens or raw exception text. Anonymous requests do not reach here.
+    if(form.action==='delete') {
+      const id=uuid.safeParse(form.id),known=isManagedResource(resource);
+      await db.insert(s.auditLogs).values({actorUserId:actorId,action:`${known?resource:'beheer'}.delete.denied`,entityType:known?resource:'beheer',entityId:id.success?id.data:null,summary:`Definitief verwijderen geweigerd; controle ${error instanceof AccessError?error.status:'serverfout'}. Bestaande relaties worden niet automatisch verwijderd.`});
+    }
+    throw error;
+  }
+}
+async function applyMutation(db:Database,actorId:string,resource:string,form:Record<string,unknown>){
+  const action=z.enum(['save','archive','delete','detach']).parse(form.action||'save'),recordId=form.id?uuid.parse(form.id):undefined;
   if(action!=='save'&&!recordId)throw new AccessError(400,'Kies het juiste record in de beheerlijst.');
-  if(action==='archive'&&!isManagedResource(resource))throw new AccessError(400,'Deze beheeractie ondersteunt geen archivering.');
-  if(action==='delete'&&resource!=='spelers')throw new AccessError(400,'Definitief verwijderen is voor dit onderdeel niet toegestaan. Gebruik de bestaande archiveer- of beheerfunctie.');
+  if(action==='archive'&&!['spelers','nieuws','agenda','sponsors'].includes(resource))throw new AccessError(400,'Deze beheeractie ondersteunt geen archivering.');
+  if(action==='delete'&&!isManagedResource(resource))throw new AccessError(400,'Definitief verwijderen is voor dit onderdeel niet toegestaan.');
+  if(action==='detach'&&!['spelers','nieuws','sponsors'].includes(resource))throw new AccessError(400,'Dit onderdeel ondersteunt geen afbeeldingskoppeling.');
   if(resource==='bronconfiguratie'&&!readEnv().SYNC_ENABLED)throw new AccessError(403,'Bronconfiguratie blijft geblokkeerd zolang synchronisatie is uitgeschakeld.');
-  if(resource==='media'){const input=z.object({id:uuid,status:z.enum(['private','published','archived']),altText:z.string().trim().min(1).max(500)}).parse(form);await changeMedia(db,actorId,input.id,input.status,input.altText);return;}
+  if(resource==='media'){
+    if(action==='delete'){await deleteMedia(db,actorId,recordId!,form);return;}
+    const input=z.object({id:uuid,status:z.enum(['private','published','archived']),altText:z.string().trim().min(1).max(500)}).parse(form);await changeMedia(db,actorId,input.id,input.status,input.altText,form);return;
+  }
   await db.transaction(async tx=>{
     let entityId=recordId,auditAction=action;
     const existing=recordId&&isManagedResource(resource)?await lockManagedRecord(tx,resource,recordId):undefined;
@@ -34,6 +51,7 @@ export async function adminMutation(db:Database,actorId:string,resource:string,f
     if(existing){
       assertRecordRevision(existing,form);
       if(action!=='save')assertRecordConfirmation(existing,form);
+      if(action==='delete'||action==='detach')assertTypedConfirmation(existing,form);
       if(action==='save'&&!recordArchived(existing)&&((resource==='nieuws'&&form.status==='archived')||(['spelers','sponsors'].includes(resource)&&form.isActive!=='on'))){assertRecordConfirmation(existing,form);auditAction='archive';}
       if(action==='archive'&&recordArchived(existing))throw new AccessError(409,'Dit item is al gearchiveerd. Ververs de beheerlijst.');
     }
@@ -43,8 +61,10 @@ export async function adminMutation(db:Database,actorId:string,resource:string,f
       const [row]=await tx.select().from(s.media).where(eq(s.media.id,id));
       if(!row||row.status!=='published'||row.mimeType!=='image/webp'||row.bucket!==readEnv().MEDIA_PRIVATE_BUCKET)throw new AccessError(400,'Kies een gepubliceerde, gecontroleerde afbeelding.');
     }
-    if(action==='delete'&&existing&&'displayName'in existing){
-      await deleteUnlinkedPlayer(tx,existing);
+    if(action==='delete'&&existing&&isManagedResource(resource)){
+      await deleteEditorialRecord(tx,resource,existing);
+    }else if(action==='detach'&&existing&&isManagedResource(resource)){
+      await detachMedia(tx,resource,existing,form);
     }else if(resource==='koppelingen'){
       const input=z.object({externalId:uuid,playerId:uuid}).parse(form);
       const [external]=await tx.select().from(s.externalPlayers).where(eq(s.externalPlayers.id,input.externalId));if(!external)throw new AccessError(404,'Bronspeler niet gevonden.');
@@ -103,6 +123,6 @@ export async function adminMutation(db:Database,actorId:string,resource:string,f
       await tx.update(s.dataOverrides).set({isActive:false}).where(and(target,eq(s.dataOverrides.fieldName,input.fieldName)));
       const [r]=await tx.insert(s.dataOverrides).values({...fk,fieldName:input.fieldName,numericValue:numeric?String(Number(input.value)):null,dateValue,textValue:!numeric&&!dateValue?input.value:null,reason:input.reason,createdBy:actorId}).returning();entityId=r.id;
     }else throw new AccessError(404,'Onbekende beheeractie.');
-    await tx.insert(s.auditLogs).values({actorUserId:actorId,action:`${resource}.${auditAction}`,entityType:resource,entityId:entityId??null,summary:auditAction==='delete'?'Verborgen, ongekoppeld spelersprofiel verwijderd; media en auditgeschiedenis blijven behouden.':auditAction==='archive'?'Item gearchiveerd; gerelateerde records en media blijven behouden.':'Beheerwijziging opgeslagen; inhoud en secrets worden niet gelogd.'});
+    await tx.insert(s.auditLogs).values({actorUserId:actorId,action:`${resource}.${auditAction}`,entityType:resource,entityId:entityId??null,summary:auditAction==='delete'?'Alleen het bevestigde record verwijderd; media, gerelateerde records en auditgeschiedenis blijven behouden.':auditAction==='detach'?'Alleen de bevestigde afbeeldingskoppeling losgemaakt; bestand en andere verwijzingen blijven behouden.':auditAction==='archive'?'Item gearchiveerd; gerelateerde records en media blijven behouden.':'Beheerwijziging opgeslagen; inhoud en secrets worden niet gelogd.'});
   });
 }

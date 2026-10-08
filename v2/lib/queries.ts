@@ -36,12 +36,14 @@ export async function getSiteData(contextId?:string){
 }
 export type SiteData=Awaited<ReturnType<typeof getSiteData>>;
 export async function getAdminData(){
-  const db=await getDatabase();const [site,runs,configs,unmapped,aliases,legacy,media,posts,events,sponsors,settings,allPlayers,allUsers,audit]=await Promise.all([
+  const db=await getDatabase();const [site,runs,configs,unmapped,aliases,legacy,media,posts,events,sponsors,settings,allPlayers,allUsers,audit,manualMatches,mediaDeletionIntents]=await Promise.all([
     getSiteData(),db.select().from(s.syncRuns).orderBy(desc(s.syncRuns.startedAt)).limit(40),db.select().from(s.sourceConfigs),
     db.select({external:s.externalPlayers,team:s.teams.name,division:s.divisions.name}).from(s.externalPlayers).innerJoin(s.teamSeasons,eq(s.externalPlayers.teamSeasonId,s.teamSeasons.id)).innerJoin(s.teams,eq(s.teamSeasons.teamId,s.teams.id)).innerJoin(s.divisions,eq(s.teamSeasons.divisionId,s.divisions.id)).where(sql`${s.externalPlayers.playerId} is null`).orderBy(asc(s.teams.name)),
     db.select().from(s.playerAliases),db.select({stats:s.legacyPlayerStats,name:s.players.displayName}).from(s.legacyPlayerStats).innerJoin(s.players,eq(s.legacyPlayerStats.playerId,s.players.id)),
     db.select().from(s.media),db.select().from(s.newsPosts).orderBy(desc(s.newsPosts.createdAt)),db.select().from(s.events),db.select().from(s.sponsors),db.select().from(s.siteSettings),db.select().from(s.players),db.select().from(s.users),
     db.select().from(s.auditLogs).orderBy(desc(s.auditLogs.occurredAt),desc(s.auditLogs.id)).limit(100),
+    db.select().from(s.matches).where(eq(s.matches.source,'manual')).orderBy(asc(s.matches.scheduledDate),asc(s.matches.id)),
+    db.selectDistinct({entityId:s.media.id}).from(s.auditLogs).innerJoin(s.media,eq(s.auditLogs.entityId,s.media.id)).where(eq(s.auditLogs.action,'media.delete.requested')),
   ]);
-  return {site,runs,configs,unmapped,aliases,legacy,media,posts,events,sponsors,settings,allPlayers,allUsers,audit};
+  return {site,runs,configs,unmapped,aliases,legacy,media,posts,events,sponsors,settings,allPlayers,allUsers,audit,manualMatches,mediaDeletionIntents};
 }

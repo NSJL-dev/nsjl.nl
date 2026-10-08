@@ -62,9 +62,9 @@ describe('Public frontend rendering', () => {
     const d = data(); d.context = {...context, competitionSlug: 'nsjl-zomer'};
     expect(renderToStaticMarkup(createElement(SourceStatus, {data: d}))).toContain('los van de reguliere competitie');
   });
-  it('navigation exposes all eight destinations including agenda, current page and accessible menu controls', () => {
+  it('navigation exposes all nine destinations including agenda and sponsors, current page and accessible menu controls', () => {
     const $ = load(renderToStaticMarkup(createElement(PublicNavigation)));
-    expect($('.pub-desktop-nav a')).toHaveLength(8);
+    expect($('.pub-desktop-nav a')).toHaveLength(9);
     expect($('.pub-desktop-nav a[href="/agenda"]').text()).toBe('Agenda');
     expect($('#public-mobile-menu a[href="/agenda"]').text()).toBe('Agenda');
     expect($('.pub-desktop-nav a[aria-current="page"]').attr('href')).toBe('/stand');

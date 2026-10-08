@@ -11,9 +11,9 @@ export async function preparedAdminForm<T extends Record<string, unknown>>(db: D
   const row = resource === 'spelers' ? (await db.select().from(s.players).where(eq(s.players.id, form.id)))[0]
     : resource === 'nieuws' ? (await db.select().from(s.newsPosts).where(eq(s.newsPosts.id, form.id)))[0]
     : resource === 'agenda' ? (await db.select().from(s.events).where(eq(s.events.id, form.id)))[0]
-    : resource === 'sponsors' ? (await db.select().from(s.sponsors).where(eq(s.sponsors.id, form.id)))[0] : undefined;
+    : resource === 'sponsors' ? (await db.select().from(s.sponsors).where(eq(s.sponsors.id, form.id)))[0] : resource === 'media' ? (await db.select().from(s.media).where(eq(s.media.id, form.id)))[0] : resource === 'wedstrijden' ? (await db.select().from(s.matches).where(eq(s.matches.id, form.id)))[0] : undefined;
   if (!row) return form;
-  return {...form, expectedRevision: recordRevision(row), ...(form.action === 'archive' || form.action === 'delete' ? {confirmedName: recordName(row)} : {})};
+  return {...form, expectedRevision: recordRevision(row), ...(form.action === 'archive' || form.action === 'delete' || form.action === 'detach' || form.status === 'archived' ? {confirmedName: recordName(row), ...(form.action === 'delete' || form.action === 'detach' ? {typedName:recordName(row)} : {})} : {})};
 }
 export async function preparedMutation(db: Database, actorId: string, resource: string, form: Record<string, unknown>) {
   return adminMutation(db, actorId, resource, await preparedAdminForm(db, resource, form));

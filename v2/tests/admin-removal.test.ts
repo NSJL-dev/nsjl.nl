@@ -25,7 +25,7 @@ beforeEach(() => {
   vi.stubEnv('VERCEL', undefined); mocks.database.mockResolvedValue(c.db); mocks.admin.mockResolvedValue({user: {id: actor}});
 });
 afterEach(() => {vi.unstubAllEnvs();});
-function actionForm(row: ManagedRecord, action = 'archive') {return {id: row.id, action, expectedRevision: recordRevision(row), confirmedName: recordName(row)};}
+function actionForm(row: ManagedRecord, action = 'archive') {return {id: row.id, action, expectedRevision: recordRevision(row), confirmedName: recordName(row), ...(action === 'delete' ? {typedName: recordName(row)} : {})};}
 async function player(extra: Partial<typeof s.players.$inferInsert> = {}) {
   const id = crypto.randomUUID(); return (await c.db.insert(s.players).values({id, firstName: 'Fixture', lastName: 'Profiel', displayName: `Fixture ${id}`, slug: `fixture-${id}`, isActive: false, ...extra}).returning())[0];
 }
@@ -42,7 +42,8 @@ async function stored(resource: string, id: string): Promise<ManagedRecord | und
   if (resource === 'sponsors') return (await c.db.select().from(s.sponsors).where(eq(s.sponsors.id, id)))[0];
   return (await c.db.select().from(s.players).where(eq(s.players.id, id)))[0];
 }
-async function audits(id: string) {return c.db.select().from(s.auditLogs).where(eq(s.auditLogs.entityId, id));}
+// Existing invariants concern committed actions; denial attempts now have a separate audit.
+async function audits(id: string) {return (await c.db.select().from(s.auditLogs).where(eq(s.auditLogs.entityId, id))).filter(row => !row.action.endsWith('.delete.denied'));}
 async function request(resource: string, body: Record<string, string>, origin = 'http://localhost:3000') {
   return POST(new Request(`http://localhost:3000/api/admin/${resource}`, {method: 'POST', headers: {origin}, body: new URLSearchParams(body)}), {params: Promise.resolve({resource})});
 }
@@ -71,10 +72,10 @@ describe('Safe editorial archiving and isolated profile removal', () => {
     const row = await player({isActive: true}); await expect(adminMutation(c.db, actor, 'spelers', actionForm(row, 'delete'))).rejects.toMatchObject({status: 409});
     expect(await stored('spelers', row.id)).toEqual(row); expect(await audits(row.id)).toHaveLength(0);
   });
-  it.each(['nieuws', 'agenda', 'sponsors', 'media', 'instellingen', 'koppelingen', 'wedstrijden', 'stand', 'statistieken', 'bronconfiguratie', 'audit'])('permanent deletion of %s is not implemented and is refused', async resource => {
+  it.each(['instellingen', 'koppelingen', 'stand', 'statistieken', 'bronconfiguratie', 'audit'])('permanent deletion of %s is not implemented and is refused', async resource => {
     await expect(adminMutation(c.db, actor, resource, {action: 'delete', id: crypto.randomUUID()})).rejects.toMatchObject({status: 400});
   });
-  it.each(['membership', 'alias', 'external', 'stats', 'history', 'legacy'])('refuses a profile with %s records and changes neither links nor audits', async kind => {
+  it.each(['membership', 'alias', 'external', 'stats', 'history', 'legacy'])('refuses a profile with %s records and preserves links and never records a successful deletion', async kind => {
     const row = await player();
     if (['membership', 'stats', 'history'].includes(kind)) await c.db.insert(s.playerTeamSeasons).values({playerId: row.id, teamSeasonId: team.id});
     if (kind === 'alias') await c.db.insert(s.playerAliases).values({playerId: row.id, source: 'fixture', divisionId: team.divisionId, teamSeasonId: team.id, externalName: row.displayName, normalizedName: row.slug});

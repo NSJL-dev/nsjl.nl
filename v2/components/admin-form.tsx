@@ -2,7 +2,8 @@
 import {useRef, useState, type FormEvent, type ReactNode} from 'react';
 
 export type ArchiveConfirmation = {field:'status'|'isActive';name:string};
-export function AdminForm({action, children, disabled=false, multipart=false, className='form-grid', confirmation, archiveConfirmation}: {action:string; children:ReactNode; disabled?:boolean; multipart?:boolean; className?:string; confirmation?:string; archiveConfirmation?:ArchiveConfirmation}) {
+export function AdminCancelButton(){return <button type="button" className="button secondary small" onClick={event=>{const form=event.currentTarget.form;form?.reset();form?.closest('details')?.removeAttribute('open');}}>Annuleren</button>;}
+export function AdminForm({action, children, disabled=false, multipart=false, className='form-grid', confirmation, archiveConfirmation, typedConfirmation}: {action:string; children:ReactNode; disabled?:boolean; multipart?:boolean; className?:string; confirmation?:string; archiveConfirmation?:ArchiveConfirmation; typedConfirmation?:string}) {
   const [busy,setBusy]=useState(false),[error,setError]=useState('');
   const submitting=useRef(false);
   async function submit(event:FormEvent<HTMLFormElement>){
@@ -10,6 +11,7 @@ export function AdminForm({action, children, disabled=false, multipart=false, cl
     submitting.current=true;
     try{
       const body=new FormData(event.currentTarget);
+      if(typedConfirmation!==undefined&&body.get('typedName')!==typedConfirmation)throw new Error('Typ de naam exact over om deze actie te bevestigen.');
       const archiving=archiveConfirmation&&(archiveConfirmation.field==='status'?body.get('status')==='archived':body.get('isActive')!=='on');
       const message=confirmation||(archiving?`“${archiveConfirmation.name}” archiveren? Het item verdwijnt uit de publieke weergave. Het record, koppelingen, statistieken en afbeeldingen blijven bewaard.`:undefined);
       if(message&&!window.confirm(message))return;

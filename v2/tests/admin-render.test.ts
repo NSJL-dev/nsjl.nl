@@ -6,7 +6,7 @@ import * as s from '@/db/schema';
 const mocks=vi.hoisted(()=>({database:vi.fn(),admin:vi.fn(),identity:vi.fn()}));
 vi.mock('@/db/client',()=>({getDatabase:mocks.database}));
 vi.mock('@/lib/auth',()=>({requireAdmin:mocks.admin,authenticatedClient:mocks.identity}));
-vi.mock('next/navigation',()=>({redirect:(url:string)=>{throw new Error(`REDIRECT:${url}`);},notFound:()=>{throw new Error('NOT_FOUND');}}));
+vi.mock('next/navigation',()=>({redirect:(url:string)=>{throw new Error(`REDIRECT:${url}`);},notFound:()=>{throw new Error('NOT_FOUND');},usePathname:()=>'/admin'}));
 import Dashboard from '@/app/admin/(protected)/page';
 import Section from '@/app/admin/(protected)/[section]/page';
 import Layout from '@/app/admin/(protected)/layout';

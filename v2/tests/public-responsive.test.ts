@@ -30,6 +30,7 @@ describe('Responsive CSS and public/admin isolation', () => {
     expect(style('.public-site .pub-menu-toggle', 'display', width)).toBe(width <= 900 ? 'flex' : 'none');
     expect(style('.public-site .pub-players-grid', 'grid-template-columns', width)).toBe(width <= 420 ? '1fr' : width <= 900 ? 'repeat(2,minmax(0,1fr))' : 'repeat(4,minmax(0,1fr))');
     expect(style('.public-site .pub-news-grid', 'grid-template-columns', width)).toBe(width <= 660 ? '1fr' : width <= 900 ? 'repeat(2,minmax(0,1fr))' : 'repeat(3,minmax(0,1fr))');
+    expect(style('.public-site .pub-sponsors-grid', 'grid-template-columns', width)).toBe(width <= 660 ? '1fr' : width <= 900 ? 'repeat(2,minmax(0,1fr))' : 'repeat(3,minmax(0,1fr))');
     expect(style('.public-site .pub-contact-grid', 'grid-template-columns', width)).toBe(width <= 660 ? '1fr' : '1fr 1fr');
     expect(style('.public-site .pub-table-scroll', 'overflow-x', width)).toBe('auto');
     expect(style('.public-site .pub-agenda-list', 'grid-template-columns', width)).toBe(width <= 660 ? '1fr' : 'repeat(2,minmax(0,1fr))');

@@ -2,12 +2,13 @@ import 'server-only';
 import {randomUUID} from 'node:crypto';
 import sharp from 'sharp';
 import {createClient} from '@supabase/supabase-js';
-import {eq} from 'drizzle-orm';
+import {and,eq} from 'drizzle-orm';
 import type {Database} from '@/db/client';
 import {media,auditLogs} from '@/db/schema';
 import {readEnv} from '@/lib/env';
 import {AccessError} from '@/lib/security';
 import {assertAdminActor} from '@/lib/admin/authorization';
+import {assertRecordRevision,assertRecordConfirmation} from '@/lib/admin/record-guard';
 export const MAX_IMAGE_BYTES=8*1024*1024;
 // Leave room for multipart framing within Vercel's 4.5 MB request-body limit.
 export const MAX_SERVER_UPLOAD_BYTES=4*1024*1024;
@@ -54,13 +55,16 @@ export async function downloadPrivateMedia(row:StoredMedia):Promise<Buffer>{
     throw new AccessError(502,'Afbeelding niet beschikbaar.');
   }
 }
-export async function changeMedia(db:Database,actor:string,id:string,status:'private'|'published'|'archived',alt:string){
+export async function changeMedia(db:Database,actor:string,id:string,status:'private'|'published'|'archived',alt:string,form?:Record<string,unknown>){
   await assertAdminActor(db,actor);
   if(!['private','published','archived'].includes(status)||!alt.trim()||alt.length>500)throw new AccessError(400,'Controleer de status en beschrijving.');
   const env=readEnv();
   try{
     await db.transaction(async tx=>{
       const [row]=await tx.select().from(media).where(eq(media.id,id)).for('update');if(!row)throw new AccessError(404,'Afbeelding niet gevonden.');
+      if(form){assertRecordRevision(row,form);if(status==='archived'&&row.status!=='archived')assertRecordConfirmation(row,form);}
+      const [intent]=await tx.select({id:auditLogs.id}).from(auditLogs).where(and(eq(auditLogs.entityId,id),eq(auditLogs.action,'media.delete.requested'))).limit(1);
+      if(intent)throw new AccessError(409,'Voor deze afbeelding is definitief verwijderen aangevraagd. Publiceren of wijzigen is geblokkeerd; ververs de lijst en rond de verwijdering af.');
       if(row.bucket!==env.MEDIA_PRIVATE_BUCKET||row.mimeType!=='image/webp')throw new AccessError(400,'Deze afbeelding heeft geen gecontroleerd privé-origineel.');
       if(status==='published'&&row.status!=='published'){
         const bytes=await downloadPrivateMedia(row),metadata=await sharp(bytes,{limitInputPixels:36_000_000}).metadata();
@@ -77,3 +81,26 @@ export async function changeMedia(db:Database,actor:string,id:string,status:'pri
   }
 }
 export function publicMediaUrl(mediaId:string){return `/api/media/${encodeURIComponent(mediaId)}`;}
+
+export function assertManagedMediaObject(row:typeof media.$inferSelect){
+  if(row.bucket!==readEnv().MEDIA_PRIVATE_BUCKET||row.mimeType!=='image/webp'||!/^uploads\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.webp$/.test(row.storagePath))throw new AccessError(409,'Alleen originele privé-uploads van deze applicatie kunnen worden verwijderd. Legacybestanden blijven behouden.');
+}
+export async function assertNoPublicMediaCopy(row:typeof media.$inferSelect){
+  assertManagedMediaObject(row);
+  try{
+    const filename=row.storagePath.slice('uploads/'.length);
+    const {data,error}=await storageClient().storage.from(readEnv().MEDIA_PUBLIC_BUCKET).list('uploads',{search:filename,limit:100,offset:0,sortBy:{column:'name',order:'asc'}});
+    // Unlike HEAD/exists, list does not confuse legacy HTTP 400 object-not-found
+    // responses with permission/transport errors. A truncated result fails closed.
+    if(error||!Array.isArray(data)||data.length>=100)throw new AccessError(502,'De controle op oude publieke kopieën is niet gelukt. Er wordt geen bestand verwijderd.');
+    if(data.some(object=>object.name===filename))throw new AccessError(409,'Er bestaat nog een oude publieke opslagkopie. Bestandsverwijdering is geblokkeerd; die kopie vereist afzonderlijk gecontroleerd opruimen.');
+  }catch(error){if(error instanceof AccessError)throw error;throw new AccessError(502,'De controle op oude publieke kopieën is niet gelukt. Er wordt geen bestand verwijderd.');}
+}
+export async function removeOriginalMediaFile(row:typeof media.$inferSelect){
+  assertManagedMediaObject(row);
+  try{
+    await assertNoPublicMediaCopy(row);
+    const {error}=await storageClient().storage.from(row.bucket).remove([row.storagePath]);
+    if(error)throw new AccessError(502,'Bestandsverwijdering is onderbroken. De registratie blijft gearchiveerd; ververs de lijst en bevestig een nieuwe poging.');
+  }catch(error){if(error instanceof AccessError)throw error;throw new AccessError(502,'Bestandsverwijdering is onderbroken. De registratie blijft gearchiveerd; ververs de lijst en bevestig een nieuwe poging.');}
+}
