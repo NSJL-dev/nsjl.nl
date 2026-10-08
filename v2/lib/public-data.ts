@@ -151,6 +151,14 @@ export const getNewsData = cache(async (): Promise<PublicData> => {
   const news = await readNews();
   return {...base(), news, media: await readMedia(news.map(n => n.featuredMediaId))};
 });
+// Active agenda records are public in the existing model. Do not expose creator
+// IDs, administration timestamps or unrelated competition/admin data.
+export const getAgendaData = cache(async () => (await getDatabase()).select({
+  id: s.events.id, title: s.events.title, description: s.events.description,
+  startsAt: s.events.startsAt, endsAt: s.events.endsAt,
+  location: s.events.location, eventType: s.events.eventType,
+}).from(s.events).where(eq(s.events.isActive, true)).orderBy(asc(s.events.startsAt), asc(s.events.id)));
+
 export const getNewsArticleData = cache(async (slug: string): Promise<PublicData> => {
   const news = await (await getDatabase()).select().from(s.newsPosts).where(and(publicNewsPredicate(), eq(s.newsPosts.slug, slug))).limit(1);
   return {...base(), news, media: await readMedia(news.map(n => n.featuredMediaId))};
