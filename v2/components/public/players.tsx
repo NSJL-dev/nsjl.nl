@@ -9,7 +9,7 @@ type Profile = PublicData['profiles'][number];
 export function PlayerAvatar({profile, data, large = false}: {profile: Profile; data: Pick<PublicData, 'media'>; large?: boolean}) {
   const photo = data.media.find(m => m.id === profile.photoMediaId);
   const initials = `${profile.firstName[0] || ''}${profile.lastName.replace(/^van (de |den )?/i, '')[0] || ''}`;
-  return <div className={`pub-avatar${large ? ' pub-avatar--large' : ''}`}>{photo ? <Image src={publicMediaUrl(photo.storagePath)} alt={photo.altText || profile.displayName} width={large ? 180 : 88} height={large ? 180 : 88} sizes={large ? '180px' : '88px'}/> : <span aria-label={`Profiel van ${profile.displayName}, foto ontbreekt`}>{initials}</span>}</div>;
+  return <div className={`pub-avatar${large ? ' pub-avatar--large' : ''}`}>{photo ? <Image unoptimized src={publicMediaUrl(photo.id)} alt={photo.altText || profile.displayName} width={large ? 180 : 88} height={large ? 180 : 88} sizes={large ? '180px' : '88px'}/> : <span aria-label={`Profiel van ${profile.displayName}, foto ontbreekt`}>{initials}</span>}</div>;
 }
 export function PlayerCards({data, profiles = data.teamProfiles, archive = false}: {data: PublicData; profiles?: Profile[]; archive?: boolean}) {
   if (!profiles.length) return <EmptyState title="Nog geen spelers bevestigd voor deze context."><p>De oorspronkelijke spelersprofielen vind je op de teampagina. Een profiel alleen bewijst geen lidmaatschap van dit team en seizoen.</p></EmptyState>;

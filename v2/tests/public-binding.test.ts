@@ -249,7 +249,7 @@ describe('Match, news, media and settings binding', () => {
     const [media] = await c.db.insert(s.media).values({filename: 'test.webp', storagePath: 'test.webp', bucket: 'private-media', mimeType: 'image/webp', size: 100, status: 'private'}).returning();
     await c.db.update(s.players).set({photoMediaId: media.id}).where(eq(s.players.id, mike.id));
     try {
-      for (const update of [{status: 'private', bucket: 'private-media'}, {status: 'archived', bucket: 'private-media'}, {status: 'published', bucket: 'unrelated-private-bucket'}]) {
+      for (const update of [{status: 'private', bucket: 'private-media'}, {status: 'archived', bucket: 'private-media'}, {status: 'published', bucket: 'unrelated-private-bucket'}, {status: 'published', bucket: 'published-media'}]) {
         await c.db.update(s.media).set(update).where(eq(s.media.id, media.id));
         const data = await getPlayerData(mike.slug, regular.id); expect(data.media).toHaveLength(0);
         expect(renderToStaticMarkup(createElement(PlayerAvatar, {profile: data.profiles[0], data}))).toContain('foto ontbreekt');
@@ -257,14 +257,16 @@ describe('Match, news, media and settings binding', () => {
     }
     finally { await c.db.update(s.players).set({photoMediaId: null}).where(eq(s.players.id, mike.id)); }
   });
-  it('published derivatives use the public URL while their private original is retained', async () => {
+  it('published private originals use a controlled media ID URL without exposing their Storage path', async () => {
     vi.stubEnv('APP_ENV', 'development'); vi.stubEnv('DATABASE_MODE', 'local'); vi.stubEnv('SUPABASE_URL', 'https://example.supabase.co'); vi.stubEnv('SUPABASE_PUBLISHABLE_KEY', 'fixture-public-key');
     vi.stubEnv('MEDIA_PUBLIC_BUCKET', 'published-media'); vi.stubEnv('MEDIA_PRIVATE_BUCKET', 'private-media');
     const [media] = await c.db.insert(s.media).values({filename: 'published.webp', storagePath: 'uploads/published.webp', bucket: 'private-media', mimeType: 'image/webp', size: 100, status: 'published'}).returning();
     await c.db.update(s.players).set({photoMediaId: media.id}).where(eq(s.players.id, mike.id));
     try {
       const data = await getPlayerData(mike.slug, regular.id); expect(data.media).toHaveLength(1);
-      expect(publicMediaUrl(data.media[0].storagePath)).toBe('https://example.supabase.co/storage/v1/object/public/published-media/uploads/published.webp');
+      expect(publicMediaUrl(data.media[0].id)).toBe(`/api/media/${media.id}`);
+      const markup = renderToStaticMarkup(createElement(PlayerAvatar, {profile:data.profiles[0],data}));
+      expect(markup).toContain(`/api/media/${media.id}`); expect(markup).not.toContain('/_next/image'); expect(markup).not.toContain(media.storagePath); expect(markup).not.toContain('supabase.co');
     } finally { await c.db.update(s.players).set({photoMediaId: null}).where(eq(s.players.id, mike.id)); }
   });
   it('player metadata reads a profile without loading any competition or statistics', async () => {

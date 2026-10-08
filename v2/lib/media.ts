@@ -30,44 +30,50 @@ export async function uploadMedia(db:Database,actor:string,input:Buffer,filename
   await assertAdminActor(db,actor);
   if(!alt.trim()||alt.length>500)throw new AccessError(400,'Voeg een beschrijving toe (maximaal 500 tekens).');
   const {data,info}=await prepareImage(input,declaredMime),client=storageClient(),env=readEnv(),path=`uploads/${randomUUID()}.webp`;
-  const {error}=await client.storage.from(env.MEDIA_PRIVATE_BUCKET).upload(path,data,{contentType:'image/webp',upsert:false});if(error)throw new AccessError(502,'Privé-upload mislukt.');
+  const {error}=await client.storage.from(env.MEDIA_PRIVATE_BUCKET).upload(path,data,{contentType:'image/webp',cacheControl:'0',upsert:false});if(error)throw new AccessError(502,'Privé-upload mislukt.');
   try{await db.transaction(async tx=>{const [row]=await tx.insert(media).values({filename:safeImageFilename(filename),storagePath:path,bucket:env.MEDIA_PRIVATE_BUCKET,mimeType:'image/webp',size:data.length,width:info.width,height:info.height,altText:alt.trim(),uploadedBy:actor}).returning();await tx.insert(auditLogs).values({actorUserId:actor,action:'media.upload',entityType:'media',entityId:row.id,summary:'Gecontroleerde afbeelding privé opgeslagen.'});});}catch{
     const cleaned=await client.storage.from(env.MEDIA_PRIVATE_BUCKET).remove([path]).catch(()=>({error:true}));
     if(cleaned.error)throw new AccessError(502,'Opslaan mislukt en de privé-upload kon niet worden opgeruimd. Controleer Storage voordat je opnieuw uploadt.');
     throw new AccessError(502,'Opslaan mislukt; de privé-upload is opgeruimd.');
   }
 }
+type StoredMedia = Pick<typeof media.$inferSelect,'bucket'|'storagePath'|'mimeType'|'size'>;
+export async function downloadPrivateMedia(row:StoredMedia):Promise<Buffer>{
+  const env=readEnv();
+  if(row.bucket!==env.MEDIA_PRIVATE_BUCKET||row.mimeType!=='image/webp'||row.size<=0||row.size>MAX_IMAGE_BYTES)throw new AccessError(400,'Deze afbeelding heeft geen gecontroleerd privé-origineel.');
+  // The service credential and Storage response stay on the server. Bypass stale
+  // origin caches without issuing a bearer URL to the browser.
+  try{
+    const {data,error}=await storageClient().storage.from(env.MEDIA_PRIVATE_BUCKET).download(row.storagePath,{cacheNonce:randomUUID()},{cache:'no-store'});
+    if(error||!data||data.size<=0||data.size>MAX_IMAGE_BYTES)throw new AccessError(502,'Afbeelding niet beschikbaar.');
+    const bytes=Buffer.from(await data.arrayBuffer());
+    if(bytes.length!==row.size||bytes.toString('ascii',0,4)!=='RIFF'||bytes.toString('ascii',8,12)!=='WEBP')throw new AccessError(502,'Afbeelding niet beschikbaar.');
+    return bytes;
+  }catch(error){
+    if(error instanceof AccessError)throw error;
+    throw new AccessError(502,'Afbeelding niet beschikbaar.');
+  }
+}
 export async function changeMedia(db:Database,actor:string,id:string,status:'private'|'published'|'archived',alt:string){
   await assertAdminActor(db,actor);
   if(!['private','published','archived'].includes(status)||!alt.trim()||alt.length>500)throw new AccessError(400,'Controleer de status en beschrijving.');
-  const client=storageClient(),env=readEnv();
-  let createdPublic=false,removedPublic=false,path='';const backup:{publicCopy:Blob|null}={publicCopy:null};
+  const env=readEnv();
   try{
     await db.transaction(async tx=>{
       const [row]=await tx.select().from(media).where(eq(media.id,id)).for('update');if(!row)throw new AccessError(404,'Afbeelding niet gevonden.');
       if(row.bucket!==env.MEDIA_PRIVATE_BUCKET||row.mimeType!=='image/webp')throw new AccessError(400,'Deze afbeelding heeft geen gecontroleerd privé-origineel.');
-      path=row.storagePath;
       if(status==='published'&&row.status!=='published'){
-        const original=await client.storage.from(env.MEDIA_PRIVATE_BUCKET).download(path);if(original.error||!original.data)throw new AccessError(502,'Privé-afbeelding niet beschikbaar.');
-        const bytes=Buffer.from(await original.data.arrayBuffer()),metadata=await sharp(bytes,{limitInputPixels:36_000_000}).metadata();
+        const bytes=await downloadPrivateMedia(row),metadata=await sharp(bytes,{limitInputPixels:36_000_000}).metadata();
         if(!bytes.length||bytes.length>MAX_IMAGE_BYTES||metadata.format!=='webp'||(metadata.pages??1)>1)throw new AccessError(400,'Het privé-origineel is geen geldige WebP-afbeelding.');
-        const uploaded=await client.storage.from(env.MEDIA_PUBLIC_BUCKET).upload(path,bytes,{contentType:'image/webp',upsert:false});if(uploaded.error)throw new AccessError(502,'Publiceren mislukt; bestaande bestanden worden niet overschreven.');
-        createdPublic=true;
-      }else if(status!=='published'){
-        if(row.status==='published'){
-          const copy=await client.storage.from(env.MEDIA_PUBLIC_BUCKET).download(path);if(copy.error||!copy.data)throw new AccessError(502,'Publieke kopie kon niet veilig worden ingetrokken.');backup.publicCopy=copy.data;
-        }
-        const removed=await client.storage.from(env.MEDIA_PUBLIC_BUCKET).remove([path]);if(removed.error)throw new AccessError(502,'Publieke kopie kon niet worden ingetrokken.');
-        removedPublic=row.status==='published';
       }
+      // Publication grants access through /api/media/[id] only. Do not create,
+      // move or delete Storage objects here. Old copies need separate approval.
       await tx.update(media).set({status,altText:alt.trim(),updatedAt:new Date()}).where(eq(media.id,id));
       await tx.insert(auditLogs).values({actorUserId:actor,action:`media.${status}`,entityType:'media',entityId:id,summary:'Mediastatus gewijzigd; privé-origineel behouden.'});
     });
   }catch(error){
-    if(createdPublic){const cleanup=await client.storage.from(env.MEDIA_PUBLIC_BUCKET).remove([path]).catch(()=>({error:true}));if(cleanup.error)throw new AccessError(502,'Publicatie mislukt en de publieke kopie kon niet worden opgeruimd. Controleer Storage.');}
-    if(removedPublic&&backup.publicCopy){const restored=await client.storage.from(env.MEDIA_PUBLIC_BUCKET).upload(path,await backup.publicCopy.arrayBuffer(),{contentType:'image/webp',upsert:false}).catch(()=>({error:true}));if(restored.error)throw new AccessError(502,'Intrekken mislukt en de oorspronkelijke publieke kopie kon niet worden hersteld. Controleer Storage.');}
     if(error instanceof AccessError)throw error;
     throw new AccessError(502,'Mediastatus opslaan mislukt; databasewijzigingen zijn teruggedraaid.');
   }
 }
-export function publicMediaUrl(path:string){const env=readEnv();return `${env.SUPABASE_URL}/storage/v1/object/public/${env.MEDIA_PUBLIC_BUCKET}/${path}`;}
+export function publicMediaUrl(mediaId:string){return `/api/media/${encodeURIComponent(mediaId)}`;}

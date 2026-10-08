@@ -6,6 +6,10 @@ Geen wijziging aan publieke componenten, publieke databinding, schema-definities
 seeddata, importer, syncservice, Storage-policies, Auth-configuratie of Vercel-configuratie.
 `SYNC_ENABLED=false` blijft de vereiste staginginstelling.
 
+Het mediamodel hieronder beschrijft de eerdere Fase-D-implementatie. De latere
+goedgekeurde wijziging vervangt ondertekende previews en openbare kopieën door
+gecontroleerde byte-routes. Zie [huidige mediatoegang en stagingtest](media-access-staging.md).
+
 ## Gebouwd en lokaal bewezen
 
 - Handmatige en scheduler-sync weigeren met HTTP 403 voordat een database,

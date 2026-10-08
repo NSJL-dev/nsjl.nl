@@ -35,7 +35,7 @@ export async function adminMutation(db:Database,actorId:string,resource:string,f
     async function publishedMedia(id:string|undefined){
       if(!id)return;
       const [row]=await tx.select().from(s.media).where(eq(s.media.id,id));
-      if(!row||row.status!=='published'||row.mimeType!=='image/webp'||![readEnv().MEDIA_PUBLIC_BUCKET,readEnv().MEDIA_PRIVATE_BUCKET].includes(row.bucket))throw new AccessError(400,'Kies een gepubliceerde, gecontroleerde afbeelding.');
+      if(!row||row.status!=='published'||row.mimeType!=='image/webp'||row.bucket!==readEnv().MEDIA_PRIVATE_BUCKET)throw new AccessError(400,'Kies een gepubliceerde, gecontroleerde afbeelding.');
     }
     if(resource==='koppelingen'){
       const input=z.object({externalId:uuid,playerId:uuid}).parse(form);

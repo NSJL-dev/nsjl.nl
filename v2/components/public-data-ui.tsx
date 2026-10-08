@@ -22,7 +22,7 @@ export function ProfileCards({data}:{data:SiteData}) {
   return <div className="players-grid">{data.profiles.map(p=>{
     const stats=data.stats.find(v=>v.stats.playerId===p.id)?.stats,photo=data.media.find(m=>m.id===p.photoMediaId);
     const initials=`${p.firstName} ${p.lastName}`.split(/\s+/).map(part=>part[0]).join('');
-    return <Link href={`/spelers/${p.slug}?context=${data.context.id}`} className="player-card" key={p.id}><div className="player-avatar">{photo?<Image src={publicMediaUrl(photo.storagePath)} alt={photo.altText} width={72} height={72}/>:initials}</div><h3 className="player-name">{p.displayName}</h3>{p.nickname&&<p className="player-nick">{p.nickname}</p>}<div className="player-stats">{[['PPD',stats?.x01Ppd],['MPR',stats?.cricketMpr],['Wins',stats?.x01Wins],['Hats',stats?.x01Hats]].map(([name,value])=><div className="pstat" key={name}><div className="pstat-val">{value??'—'}</div><div className="pstat-label">{name}</div></div>)}</div>{!stats&&<p className="player-note">Geen bevestigde cijfers voor dit team en seizoen.</p>}</Link>;
+    return <Link href={`/spelers/${p.slug}?context=${data.context.id}`} className="player-card" key={p.id}><div className="player-avatar">{photo?<Image unoptimized src={publicMediaUrl(photo.id)} alt={photo.altText} width={72} height={72}/>:initials}</div><h3 className="player-name">{p.displayName}</h3>{p.nickname&&<p className="player-nick">{p.nickname}</p>}<div className="player-stats">{[['PPD',stats?.x01Ppd],['MPR',stats?.cricketMpr],['Wins',stats?.x01Wins],['Hats',stats?.x01Hats]].map(([name,value])=><div className="pstat" key={name}><div className="pstat-val">{value??'—'}</div><div className="pstat-label">{name}</div></div>)}</div>{!stats&&<p className="player-note">Geen bevestigde cijfers voor dit team en seizoen.</p>}</Link>;
   })}</div>;
 }
 
@@ -31,7 +31,7 @@ export function NewsCards({data}:{data:SiteData}) {
     const media=data.media.find(m=>m.id===n.featuredMediaId);
     const category=n.category.toLocaleLowerCase('nl-NL');
     const kind=category==='statistieken'?'stats':category==='aankondiging'?'announcement':'news';
-    return <Link className="nieuws-card" key={n.id} href={`/nieuws/${n.slug}`}><div className={`nieuws-img nieuws-img-${kind}`}>{media?<Image src={publicMediaUrl(media.storagePath)} alt={media.altText} width={720} height={400}/>:<span aria-hidden="true">{kind==='stats'?'🎯':kind==='announcement'?'📢':category==='wedstrijdverslag'?'🏆':'📰'}</span>}</div><div className="nieuws-body"><span className="nieuws-tag">{n.category}</span><h3 className="nieuws-title">{n.title}</h3><p className="nieuws-excerpt">{n.excerpt}</p><div className="nieuws-date">{dateNL(n.publishedAt,true)}</div></div></Link>;
+    return <Link className="nieuws-card" key={n.id} href={`/nieuws/${n.slug}`}><div className={`nieuws-img nieuws-img-${kind}`}>{media?<Image unoptimized src={publicMediaUrl(media.id)} alt={media.altText} width={720} height={400}/>:<span aria-hidden="true">{kind==='stats'?'🎯':kind==='announcement'?'📢':category==='wedstrijdverslag'?'🏆':'📰'}</span>}</div><div className="nieuws-body"><span className="nieuws-tag">{n.category}</span><h3 className="nieuws-title">{n.title}</h3><p className="nieuws-excerpt">{n.excerpt}</p><div className="nieuws-date">{dateNL(n.publishedAt,true)}</div></div></Link>;
   })}</div>;
 }
 

@@ -38,9 +38,9 @@ export const getPublicSettings = cache(async () => Object.fromEntries((await (aw
 async function readMedia(ids: (string | null)[]) {
   const unique = [...new Set(ids.filter((id): id is string => Boolean(id)))];
   if (!unique.length) return [];
-  // Publication creates a public derivative while retaining the private original's bucket on the row.
-  // Public components always use publicMediaUrl, never this original bucket's URL.
-  return (await getDatabase()).select().from(s.media).where(and(inArray(s.media.id, unique), eq(s.media.status, 'published'), inArray(s.media.bucket, [process.env.MEDIA_PUBLIC_BUCKET || 'published-media', process.env.MEDIA_PRIVATE_BUCKET || 'private-media']), eq(s.media.mimeType, 'image/webp')));
+  // Public components use a status-checked route by media ID. Only records with
+  // a controlled private original can be served by that route.
+  return (await getDatabase()).select().from(s.media).where(and(inArray(s.media.id, unique), eq(s.media.status, 'published'), eq(s.media.bucket, process.env.MEDIA_PRIVATE_BUCKET || 'private-media'), eq(s.media.mimeType, 'image/webp')));
 }
 
 async function readOverrides(ids: {matches?: string[]; teams?: string[]; stats?: string[]}) {
