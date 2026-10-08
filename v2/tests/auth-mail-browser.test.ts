@@ -2,7 +2,7 @@ import {describe, expect, it, vi} from 'vitest';
 import {createElement} from 'react';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {takeMailFragment, mailBrowserTransportAllowed} from '@/lib/auth-mail-fragment';
-import {AuthMailBridge} from '@/components/auth/mail-bridge';
+import {AuthMailBridge, MailErrorNotice} from '@/components/auth/mail-bridge';
 function browser(fragment: string, path = '/') {
   const state = {next: 'existing-history-state'};
   const location = {hash: fragment, pathname: path, search: '?context=regular'};
@@ -35,6 +35,15 @@ describe('Browser-only Supabase fragment handoff', () => {
     const b = browser(hash); expect(takeMailFragment(b)).toBeNull(); expect(b.location.hash).toBe(hash);
   });
   it('does not change normal public or admin server markup', () => { expect(renderToStaticMarkup(createElement(AuthMailBridge))).toBe(''); });
+  it.each(['MAIL_JSON_UNREADABLE', 'MAIL_PREVIEW_INVALID', 'MAIL_STATE_PUBLISH_FAILED'] as const)('shows safe diagnostic %s without calling it an unsafe link', category => {
+    const markup = renderToStaticMarkup(createElement(MailErrorNotice, {category}));
+    expect(markup).toContain('role="alert"'); expect(markup).toContain(`<code>${category}</code>`);
+    expect(markup).not.toContain('Deze maillink kan niet veilig worden verwerkt');
+  });
+  it('preserves the generic link rejection for authentication or fragment failures', () => {
+    const markup = renderToStaticMarkup(createElement(MailErrorNotice));
+    expect(markup).toContain('Deze maillink kan niet veilig worden verwerkt'); expect(markup).not.toContain('Foutcategorie:');
+  });
   it('allows HTTPS and only explicitly enabled localhost HTTP', () => {
     expect(mailBrowserTransportAllowed({protocol: 'https:', hostname: 'staging.example.invalid'}, false)).toBe(true);
     expect(mailBrowserTransportAllowed({protocol: 'http:', hostname: 'localhost'}, true)).toBe(true);

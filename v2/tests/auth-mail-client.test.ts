@@ -1,7 +1,7 @@
-import {describe, expect, it, vi} from 'vitest';
+import {afterEach, describe, expect, it, vi} from 'vitest';
 import {createMailHandoff, type MailView} from '@/lib/auth-mail-browser';
 const tokens = {access_token: 'fixture-access', refresh_token: 'fixture-refresh', type: 'recovery' as const};
-function setup() {
+function setup(type: 'invite' | 'recovery' = 'recovery') {
   const states: MailView[] = [], replace = vi.fn();
   const fetch = vi.fn<typeof globalThis.fetch>(async (_url, init) => {
     if (init?.method === 'GET') return Response.json({csrf: 'a'.repeat(64)});
@@ -9,10 +9,18 @@ function setup() {
     return Response.json(action === 'preview' ? {email: 'verified@example.invalid'} : {destination: 'https://evil.example.invalid'});
   });
   const browser = {location: {protocol: 'https:', hostname: 'staging.example.invalid'}, allowLocalHttp: false, fetch, replace};
-  const handoff = createMailHandoff(tokens, browser, state => states.push(state));
+  const handoff = createMailHandoff({...tokens, type}, browser, state => states.push(state));
   return {handoff, browser, fetch, replace, states};
 }
 describe('Explicit, storage-free browser mail workflow', () => {
+  afterEach(() => {vi.restoreAllMocks();});
+  it.each(['invite', 'recovery'] as const)('preserves the flat preview contract and explicit activation for %s', async type => {
+    const c = setup(type); await c.handoff.start();
+    expect(c.states).toEqual([{phase: 'checking'}, {phase: 'confirm', email: 'verified@example.invalid'}]);
+    expect(JSON.parse(String(c.fetch.mock.calls[1][1]?.body))).toEqual({...tokens, type, csrf: 'a'.repeat(64), action: 'preview'});
+    expect(c.replace).not.toHaveBeenCalled(); expect(c.fetch).toHaveBeenCalledTimes(2);
+    await c.handoff.confirm(); expect(c.replace).toHaveBeenCalledWith('/admin/wachtwoord');
+  });
   it('previews a verified identity but never automatically activates or logs out', async () => {
     const c = setup(); await c.handoff.start();
     expect(c.states.at(-1)).toEqual({phase: 'confirm', email: 'verified@example.invalid'});
@@ -78,6 +86,75 @@ describe('Explicit, storage-free browser mail workflow', () => {
   });
   it('does not accept a malformed preview identity', async () => {
     const c = setup(); c.fetch.mockResolvedValueOnce(Response.json({csrf: 'a'.repeat(64)})).mockResolvedValueOnce(Response.json({email: {html: '<script>fixture</script>'}}));
-    await c.handoff.start(); await c.handoff.confirm(); expect(c.states.at(-1)?.phase).toBe('error'); expect(c.fetch).toHaveBeenCalledTimes(2);
+    await c.handoff.start(); await c.handoff.confirm(); expect(c.states.at(-1)).toEqual({phase: 'error', errorCategory: 'MAIL_PREVIEW_INVALID'}); expect(c.fetch).toHaveBeenCalledTimes(2);
+  });
+  it.each([
+    ['null', null], ['array', [{email: 'verified@example.invalid'}]], ['string', 'verified@example.invalid'],
+    ['missing identity', {}], ['wrapped identity', {data: {email: 'verified@example.invalid'}}],
+    ['activation answer', {destination: '/admin/wachtwoord'}], ['non-string identity', {email: 1}],
+    ['empty identity', {email: ''}], ['oversized identity', {email: 'x'.repeat(255)}],
+  ])('classifies HTTP 200 with %s as an invalid preview, without activation or retries', async (_label, answer) => {
+    const c = setup(); c.fetch.mockResolvedValueOnce(Response.json({csrf: 'a'.repeat(64)})).mockResolvedValueOnce(Response.json(answer));
+    await c.handoff.start(); await c.handoff.start(); await c.handoff.confirm(); await c.handoff.logoutAndRestart();
+    expect(c.states.at(-1)).toEqual({phase: 'error', errorCategory: 'MAIL_PREVIEW_INVALID'});
+    expect(c.fetch).toHaveBeenCalledTimes(2); expect(c.replace).not.toHaveBeenCalled();
+    expect(c.states.at(-1)).not.toHaveProperty('email');
+  });
+  it.each([null, {}, {csrf: 'not-a-valid-challenge'}])('rejects an unexpected challenge response before sending tokens', async answer => {
+    const c = setup(); c.fetch.mockResolvedValueOnce(Response.json(answer)); await c.handoff.start(); await c.handoff.confirm();
+    expect(c.states.at(-1)).toEqual({phase: 'error', errorCategory: 'MAIL_PREVIEW_INVALID'});
+    expect(c.fetch).toHaveBeenCalledTimes(1); expect(c.replace).not.toHaveBeenCalled();
+  });
+  describe.each(['challenge', 'preview'] as const)('unreadable %s JSON', stage => {
+    it.each(['empty body', 'HTML body', 'body read error'] as const)('classifies HTTP 200 with %s without exposing body or exception details', async format => {
+      const c = setup();
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {}), error = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const sensitiveFixture = [tokens.access_token, tokens.refresh_token, 'verified@example.invalid', 'https://staging.example.invalid/#fixture'].join(' ');
+      const response = new Response(format === 'empty body' ? '' : `<html>${sensitiveFixture}</html>`, {status: 200});
+      if (format === 'body read error') vi.spyOn(response, 'json').mockRejectedValueOnce(new Error(sensitiveFixture));
+      if (stage === 'preview') c.fetch.mockResolvedValueOnce(Response.json({csrf: 'a'.repeat(64)}));
+      c.fetch.mockResolvedValueOnce(response);
+      await c.handoff.start(); await c.handoff.confirm(); await c.handoff.start();
+      expect(c.states.at(-1)).toEqual({phase: 'error', errorCategory: 'MAIL_JSON_UNREADABLE'});
+      expect(c.fetch).toHaveBeenCalledTimes(stage === 'preview' ? 2 : 1); expect(c.replace).not.toHaveBeenCalled();
+      expect(warn).not.toHaveBeenCalled(); expect(error).not.toHaveBeenCalled();
+      for (const value of sensitiveFixture.split(' ')) expect(JSON.stringify(c.states)).not.toContain(value);
+    });
+  });
+  it('accepts the existing identity contract with harmless extra fields', async () => {
+    const c = setup(); c.fetch.mockResolvedValueOnce(Response.json({csrf: 'a'.repeat(64)})).mockResolvedValueOnce(Response.json({email: 'x'.repeat(254), extra: true}));
+    await c.handoff.start(); expect(c.states.at(-1)).toEqual({phase: 'confirm', email: 'x'.repeat(254)});
+    expect(c.fetch).toHaveBeenCalledTimes(2); expect(c.replace).not.toHaveBeenCalled();
+  });
+  it.each(['checking', 'confirm', 'activating'] as const)('fails closed when publishing %s throws and emits only a fixed category', async phase => {
+    const c = setup(), published: MailView[] = [];
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const handoff = createMailHandoff(tokens, c.browser, state => {
+      if (state.phase === phase) throw new Error('Private fixture ' + tokens.access_token + ' verified@example.invalid');
+      published.push(state);
+    });
+    await expect(handoff.start()).resolves.toBeUndefined(); await expect(handoff.confirm()).resolves.toBeUndefined();
+    await handoff.start(); await handoff.confirm(); await handoff.logoutAndRestart();
+    expect(published.at(-1)).toEqual({phase: 'error', errorCategory: 'MAIL_STATE_PUBLISH_FAILED'});
+    expect(warn.mock.calls).toEqual([['MAIL_STATE_PUBLISH_FAILED']]);
+    expect(c.fetch).toHaveBeenCalledTimes(phase === 'checking' ? 0 : 2); expect(c.replace).not.toHaveBeenCalled();
+  });
+  it('contains a permanently failing publisher, including its error fallback', async () => {
+    const c = setup(), warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const changed = vi.fn(() => {throw new Error('Private fixture ' + tokens.refresh_token);});
+    const handoff = createMailHandoff(tokens, c.browser, changed);
+    await expect(handoff.start()).resolves.toBeUndefined(); await handoff.confirm(); await handoff.start();
+    expect(changed).toHaveBeenCalledTimes(2); expect(changed.mock.calls[1]).toEqual([{phase: 'error', errorCategory: 'MAIL_STATE_PUBLISH_FAILED'}]);
+    expect(warn.mock.calls).toEqual([['MAIL_STATE_PUBLISH_FAILED']]); expect(c.fetch).not.toHaveBeenCalled(); expect(c.replace).not.toHaveBeenCalled();
+  });
+  it('does not activate reentrantly while a failing confirmation state is being published', async () => {
+    const c = setup(); vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const handoff: ReturnType<typeof createMailHandoff> = createMailHandoff(tokens, c.browser, state => {
+      if (state.phase === 'confirm') {void handoff.confirm(); throw new Error('Fixture publisher failure');}
+      c.states.push(state);
+    });
+    await handoff.start(); await handoff.confirm();
+    expect(c.states.at(-1)).toEqual({phase: 'error', errorCategory: 'MAIL_STATE_PUBLISH_FAILED'});
+    expect(c.fetch).toHaveBeenCalledTimes(2); expect(c.replace).not.toHaveBeenCalled();
   });
 });

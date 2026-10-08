@@ -2,12 +2,21 @@
 import {useEffect, useRef, useState} from 'react';
 import {createPortal} from 'react-dom';
 import {takeMailFragment, type MailFragment} from '@/lib/auth-mail-fragment';
-import {createMailHandoff, type MailView} from '@/lib/auth-mail-browser';
+import {createMailHandoff, type MailErrorCategory, type MailView} from '@/lib/auth-mail-browser';
 import styles from './mail-bridge.module.css';
 
 // Capture at the first execution of this client module, before React hydration.
 // This mailbox lives only in memory and is consumed by the mounted bridge.
 let initialFragment: MailFragment | null = typeof window === 'undefined' ? null : takeMailFragment(window);
+
+export function MailErrorNotice({category}: {category?: MailErrorCategory}) {
+  const messages: Record<MailErrorCategory, string> = {
+    MAIL_JSON_UNREADABLE: 'Het antwoord van de website kon niet als JSON worden gelezen.',
+    MAIL_PREVIEW_INVALID: 'De website gaf een onverwacht antwoord tijdens de voorcontrole.',
+    MAIL_STATE_PUBLISH_FAILED: 'De website kon de volgende stap niet tonen.',
+  };
+  return <p role="alert">{category ? <>{messages[category]} Noteer de foutcategorie en meld deze.<br />Foutcategorie: <code>{category}</code></> : 'Deze maillink kan niet veilig worden verwerkt. Vraag zo nodig een nieuwe uitnodiging of herstelmail aan.'}</p>;
+}
 
 export function AuthMailBridge({allowLocalHttp = false}: {allowLocalHttp?: boolean}) {
   const [view, setView] = useState<MailView | null>(null);
@@ -30,7 +39,7 @@ export function AuthMailBridge({allowLocalHttp = false}: {allowLocalHttp?: boole
       <div id="auth-mail-description" aria-live="polite">
         {view.phase === 'checking' && <p>Je maillink wordt veilig gecontroleerd…</p>}
         {(view.phase === 'confirm' || view.phase === 'activating') && <><p>Deze maillink hoort bij <strong>{view.email}</strong>.</p><p>Ga alleen verder als dit jouw eigen beheeraccount is. Tweestapsverificatie blijft verplicht.</p></>}
-        {view.phase === 'error' && <p role="alert">Deze maillink kan niet veilig worden verwerkt. Vraag zo nodig een nieuwe uitnodiging of herstelmail aan.</p>}
+        {view.phase === 'error' && <MailErrorNotice category={view.errorCategory} />}
         {view.phase === 'logout' && <p role="alert">Er staat al een sessie in deze browser. Log eerst expliciet uit. Daarna controleren we deze maillink opnieuw, voordat je je eigen account bevestigt.</p>}
       </div>
       {(view.phase === 'confirm' || view.phase === 'activating') && <button className="button" type="button" onClick={() => void handoff.current?.confirm()} disabled={view.phase === 'activating'}>{view.phase === 'activating' ? 'Veilig afronden…' : 'Doorgaan met mijn account'}</button>}
