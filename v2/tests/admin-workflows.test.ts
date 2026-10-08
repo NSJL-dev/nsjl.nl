@@ -2,7 +2,7 @@ import {beforeAll,afterAll,afterEach,describe,it,expect,vi} from 'vitest';
 import {eq,sql,and} from 'drizzle-orm';
 import {testDatabase} from './database';
 import * as s from '@/db/schema';
-import {adminMutation} from '@/lib/admin/mutations';
+import {preparedMutation as adminMutation} from './admin-input';
 let c:Awaited<ReturnType<typeof testDatabase>>,actor:string,newsId:string,originalSlug:string,originalDate:Date,reportId:string;
 const news={title:'Beheerstroom',excerpt:'Een testbericht',content:'<p>NSJL nieuws</p>',category:'Team',status:'draft'};
 beforeAll(async()=>{c=await testDatabase();actor=crypto.randomUUID();await c.db.insert(s.users).values({id:actor,name:'Workflow admin',email:'workflow-admin@example.invalid'});const [source]=await c.db.select().from(s.sourceConfigs);const [report]=await c.db.insert(s.sourceReports).values({sourceConfigId:source.id,reportType:'results',discoveredUrl:'https://fixture.example.invalid/report',reportDatetimeLocal:new Date('2026-10-01T12:00:00Z'),sha256:'a'.repeat(64),parserVersion:'fixture'}).returning();reportId=report.id;});

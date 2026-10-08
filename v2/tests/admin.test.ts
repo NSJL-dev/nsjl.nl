@@ -2,7 +2,7 @@ import {describe,it,expect,beforeAll,afterAll} from 'vitest';
 import {eq,and} from 'drizzle-orm';
 import {testDatabase} from './database';
 import {fixtureBundle} from './fixtures';
-import {adminMutation} from '@/lib/admin/mutations';
+import {preparedMutation as adminMutation} from './admin-input';
 import {enforceRateLimit} from '@/lib/rate-limit';
 import {applyOverrides} from '@/lib/overrides';
 import {prepareImage} from '@/lib/media';

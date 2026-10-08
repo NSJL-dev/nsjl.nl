@@ -1,3 +1,4 @@
+import {preparedAdminForm} from './admin-input';
 import {afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi} from 'vitest';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {createElement} from 'react';
@@ -36,7 +37,7 @@ async function store(fields: Partial<typeof s.events.$inferInsert> = {}) {
 }
 async function page() { return load(renderToStaticMarkup(await Agenda())); }
 async function adminWrite(form: Record<string, string>) {
-  return mutate(new Request('http://localhost:3000/api/admin/agenda', {method: 'POST', headers: {origin: 'http://localhost:3000'}, body: new URLSearchParams(form)}), {params: Promise.resolve({resource: 'agenda'})});
+  return mutate(new Request('http://localhost:3000/api/admin/agenda', {method: 'POST', headers: {origin: 'http://localhost:3000'}, body: new URLSearchParams(await preparedAdminForm(c.db, 'agenda', form))}), {params: Promise.resolve({resource: 'agenda'})});
 }
 beforeAll(async () => {
   // Synthetic agenda/users exist only in this temporary local database.

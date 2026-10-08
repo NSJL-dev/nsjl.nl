@@ -9,6 +9,7 @@ import {AccessError} from '@/lib/security';
 import {changeMedia} from '@/lib/media';
 import {assertAdminActor} from './authorization';
 import {readEnv} from '@/lib/env';
+import {isManagedResource,lockManagedRecord,assertRecordRevision,assertRecordConfirmation,recordArchived,deleteUnlinkedPlayer} from './record-guard';
 const uuid=z.uuid();const short=z.string().trim().min(1).max(150);const text=z.string().max(30000);const url=z.url().refine(v=>['https:','http:'].includes(new URL(v).protocol));
 const optionalUuid=z.preprocess(v=>v===''?undefined:v,uuid.optional());
 const isoDate=z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine(v=>{const d=new Date(`${v}T12:00:00Z`);return !Number.isNaN(d.valueOf())&&d.toISOString().slice(0,10)===v;});
@@ -20,24 +21,31 @@ const schemas={
 };
 export async function adminMutation(db:Database,actorId:string,resource:string,form:Record<string,unknown>){
   await assertAdminActor(db,actorId);
-  const action=z.enum(['save','archive']).parse(form.action||'save'),recordId=form.id?uuid.parse(form.id):undefined;
-  if(action==='archive'&&!recordId)throw new AccessError(400,'Kies het te archiveren record.');
-  if(action==='archive'&&!['spelers','nieuws','agenda','sponsors'].includes(resource))throw new AccessError(400,'Deze beheeractie ondersteunt geen archivering.');
+  const action=z.enum(['save','archive','delete']).parse(form.action||'save'),recordId=form.id?uuid.parse(form.id):undefined;
+  if(action!=='save'&&!recordId)throw new AccessError(400,'Kies het juiste record in de beheerlijst.');
+  if(action==='archive'&&!isManagedResource(resource))throw new AccessError(400,'Deze beheeractie ondersteunt geen archivering.');
+  if(action==='delete'&&resource!=='spelers')throw new AccessError(400,'Definitief verwijderen is voor dit onderdeel niet toegestaan. Gebruik de bestaande archiveer- of beheerfunctie.');
   if(resource==='bronconfiguratie'&&!readEnv().SYNC_ENABLED)throw new AccessError(403,'Bronconfiguratie blijft geblokkeerd zolang synchronisatie is uitgeschakeld.');
   if(resource==='media'){const input=z.object({id:uuid,status:z.enum(['private','published','archived']),altText:z.string().trim().min(1).max(500)}).parse(form);await changeMedia(db,actorId,input.id,input.status,input.altText);return;}
   await db.transaction(async tx=>{
-    let entityId=recordId;
-    const existing=recordId&&resource==='spelers'?(await tx.select().from(s.players).where(eq(s.players.id,recordId)))[0]:recordId&&resource==='nieuws'?(await tx.select().from(s.newsPosts).where(eq(s.newsPosts.id,recordId)))[0]:undefined;
-    if(recordId&&['spelers','nieuws'].includes(resource)&&!existing)throw new AccessError(404,'Record niet gevonden.');
-    if(recordId&&resource==='agenda'&&!(await tx.select({id:s.events.id}).from(s.events).where(eq(s.events.id,recordId)))[0])throw new AccessError(404,'Agenda-item niet gevonden.');
-    if(recordId&&resource==='sponsors'&&!(await tx.select({id:s.sponsors.id}).from(s.sponsors).where(eq(s.sponsors.id,recordId)))[0])throw new AccessError(404,'Sponsor niet gevonden.');
+    let entityId=recordId,auditAction=action;
+    const existing=recordId&&isManagedResource(resource)?await lockManagedRecord(tx,resource,recordId):undefined;
+    if(recordId&&isManagedResource(resource)&&!existing)throw new AccessError(404,'Item niet gevonden. Het is mogelijk al verwijderd; ververs de beheerlijst.');
+    if(existing){
+      assertRecordRevision(existing,form);
+      if(action!=='save')assertRecordConfirmation(existing,form);
+      if(action==='save'&&!recordArchived(existing)&&((resource==='nieuws'&&form.status==='archived')||(['spelers','sponsors'].includes(resource)&&form.isActive!=='on'))){assertRecordConfirmation(existing,form);auditAction='archive';}
+      if(action==='archive'&&recordArchived(existing))throw new AccessError(409,'Dit item is al gearchiveerd. Ververs de beheerlijst.');
+    }
     if(recordId&&resource==='bronconfiguratie'&&!(await tx.select({id:s.sourceConfigs.id}).from(s.sourceConfigs).where(eq(s.sourceConfigs.id,recordId)))[0])throw new AccessError(404,'Bronconfiguratie niet gevonden.');
     async function publishedMedia(id:string|undefined){
       if(!id)return;
       const [row]=await tx.select().from(s.media).where(eq(s.media.id,id));
       if(!row||row.status!=='published'||row.mimeType!=='image/webp'||row.bucket!==readEnv().MEDIA_PRIVATE_BUCKET)throw new AccessError(400,'Kies een gepubliceerde, gecontroleerde afbeelding.');
     }
-    if(resource==='koppelingen'){
+    if(action==='delete'&&existing&&'displayName'in existing){
+      await deleteUnlinkedPlayer(tx,existing);
+    }else if(resource==='koppelingen'){
       const input=z.object({externalId:uuid,playerId:uuid}).parse(form);
       const [external]=await tx.select().from(s.externalPlayers).where(eq(s.externalPlayers.id,input.externalId));if(!external)throw new AccessError(404,'Bronspeler niet gevonden.');
       const [player]=await tx.select().from(s.players).where(eq(s.players.id,input.playerId));if(!player)throw new AccessError(404,'Speler niet gevonden.');
@@ -58,7 +66,7 @@ export async function adminMutation(db:Database,actorId:string,resource:string,f
         if(input.publishedAt)z.iso.datetime({offset:true}).parse(input.publishedAt);
         const publishedAt=input.publishedAt?new Date(input.publishedAt):input.status==='published'?(existing&&'publishedAt'in existing?existing.publishedAt:null)??new Date():null;
         if(publishedAt&&Number.isNaN(publishedAt.valueOf()))throw new AccessError(400,'Ongeldige publicatiedatum.');
-        const values={...input,slug:input.slug||(existing&&'title'in existing?existing.slug:slugify(input.title)),content:sanitizeHtml(input.content,{allowedTags:['p','br','strong','em','h2','h3','ul','ol','li','a'],allowedAttributes:{a:['href','title']},allowedSchemes:['https','mailto']}),publishedAt,featuredMediaId:input.featuredMediaId??null,authorId:actorId,updatedAt:new Date()};
+        const values={...input,slug:input.slug||(existing&&'publishedAt'in existing?existing.slug:slugify(input.title)),content:sanitizeHtml(input.content,{allowedTags:['p','br','strong','em','h2','h3','ul','ol','li','a'],allowedAttributes:{a:['href','title']},allowedSchemes:['https','mailto']}),publishedAt,featuredMediaId:input.featuredMediaId??null,authorId:actorId,updatedAt:new Date()};
         if(!values.content.trim())throw new AccessError(400,'Het bericht moet veilige tekst bevatten.');
         if(recordId)await tx.update(s.newsPosts).set(values).where(eq(s.newsPosts.id,recordId));else{const [r]=await tx.insert(s.newsPosts).values(values).returning();entityId=r.id;}
       }
@@ -67,7 +75,7 @@ export async function adminMutation(db:Database,actorId:string,resource:string,f
       else{
       const input=schemas.agenda.parse(form);z.iso.datetime({offset:true}).parse(input.startsAt);if(input.endsAt)z.iso.datetime({offset:true}).parse(input.endsAt);const startsAt=new Date(input.startsAt),endsAt=input.endsAt?new Date(input.endsAt):null;
       if(Number.isNaN(startsAt.valueOf())||(endsAt&&(Number.isNaN(endsAt.valueOf())||endsAt<startsAt)))throw new AccessError(400,'Controleer de begin- en einddatum.');
-      const values={...input,startsAt,endsAt,isActive:true,createdBy:actorId,updatedAt:new Date()};if(recordId)await tx.update(s.events).set(values).where(eq(s.events.id,recordId));else{const [r]=await tx.insert(s.events).values(values).returning();entityId=r.id;}}
+      const values={...input,startsAt,endsAt,isActive:existing&&'startsAt'in existing?existing.isActive:true,createdBy:actorId,updatedAt:new Date()};if(recordId)await tx.update(s.events).set(values).where(eq(s.events.id,recordId));else{const [r]=await tx.insert(s.events).values(values).returning();entityId=r.id;}}
     }else if(resource==='sponsors'){
       if(action==='archive'&&recordId)await tx.update(s.sponsors).set({isActive:false,updatedAt:new Date()}).where(eq(s.sponsors.id,recordId));
       else{const input=schemas.sponsors.parse(form);await publishedMedia(input.logoMediaId);const values={...input,isActive:input.isActive==='on',websiteUrl:input.websiteUrl??null,logoMediaId:input.logoMediaId??null,updatedAt:new Date()};if(recordId)await tx.update(s.sponsors).set(values).where(eq(s.sponsors.id,recordId));else{const [r]=await tx.insert(s.sponsors).values(values).returning();entityId=r.id;}}
@@ -95,6 +103,6 @@ export async function adminMutation(db:Database,actorId:string,resource:string,f
       await tx.update(s.dataOverrides).set({isActive:false}).where(and(target,eq(s.dataOverrides.fieldName,input.fieldName)));
       const [r]=await tx.insert(s.dataOverrides).values({...fk,fieldName:input.fieldName,numericValue:numeric?String(Number(input.value)):null,dateValue,textValue:!numeric&&!dateValue?input.value:null,reason:input.reason,createdBy:actorId}).returning();entityId=r.id;
     }else throw new AccessError(404,'Onbekende beheeractie.');
-    await tx.insert(s.auditLogs).values({actorUserId:actorId,action:`${resource}.${action}`,entityType:resource,entityId:entityId??null,summary:'Beheerwijziging opgeslagen; inhoud en secrets worden niet gelogd.'});
+    await tx.insert(s.auditLogs).values({actorUserId:actorId,action:`${resource}.${auditAction}`,entityType:resource,entityId:entityId??null,summary:auditAction==='delete'?'Verborgen, ongekoppeld spelersprofiel verwijderd; media en auditgeschiedenis blijven behouden.':auditAction==='archive'?'Item gearchiveerd; gerelateerde records en media blijven behouden.':'Beheerwijziging opgeslagen; inhoud en secrets worden niet gelogd.'});
   });
 }
