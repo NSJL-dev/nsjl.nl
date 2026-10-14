@@ -2,10 +2,14 @@ import {NextRequest, NextResponse} from 'next/server';
 import {ACCESS_COOKIE, REFRESH_COOKIE, newAuthClient, writeSessionCookies, expireSessionCookies} from '@/lib/auth-client';
 import {authConfigured, readEnv} from '@/lib/env';
 import {AccessError, assertOrigin} from '@/lib/security';
+import {formspreeEndpoint} from '@/lib/formspree';
 
 export async function proxy(request: NextRequest) {
   const nonce=Buffer.from(crypto.randomUUID()).toString('base64'),supabase=process.env.SUPABASE_URL?new URL(process.env.SUPABASE_URL).origin:'';
-  const csp=`default-src 'self'; script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${process.env.NODE_ENV==='development'?"'unsafe-eval'":''}; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: ${supabase}; connect-src 'self' ${supabase}; form-action 'self' https://formspree.io; frame-ancestors 'none'; base-uri 'self'; object-src 'none'`;
+  const contactEndpoint=formspreeEndpoint(process.env.FORM_SPREE_ENDPOINT)||'';
+  // fetch is governed by connect-src, not form-action. Use the exact public
+  // endpoint on every document so App Router navigation into home also works.
+  const csp=`default-src 'self'; script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${process.env.NODE_ENV==='development'?"'unsafe-eval'":''}; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: ${supabase}; connect-src 'self' ${supabase} ${contactEndpoint}; form-action 'self' https://formspree.io; frame-ancestors 'none'; base-uri 'self'; object-src 'none'`;
   const path=request.nextUrl.pathname;
   const next = () => {
     const headers=new Headers(request.headers);headers.set('x-nonce',nonce);headers.set('Content-Security-Policy',csp);
@@ -13,7 +17,7 @@ export async function proxy(request: NextRequest) {
     if(path.startsWith('/admin')||path.startsWith('/api')||path.startsWith('/auth/'))response.headers.set('Cache-Control','private, no-store');
     if(path.startsWith('/auth/'))response.headers.set('Referrer-Policy','no-referrer');return response;
   };
-  // Keep the approved public CSP unchanged; only protected paths refresh sessions.
+  // Only protected paths refresh sessions; public contact adds no auth requests.
   if(!(path.startsWith('/admin')||path.startsWith('/api/admin/')||path.startsWith('/api/auth/mfa')||path==='/api/auth/password'))return next();
   const env = readEnv();
   // Disabled sync must not cause even an authentication/refresh request.
