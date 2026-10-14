@@ -17,7 +17,7 @@ describe('LeagueLeader offline contract',()=>{
     expect(r.results.find(x=>x.team==='T Centrum 1')?.date).toBe('2026-09-24');
   });
   it('leest X01 en echte 9DO-15DO-kolommen, 6DO is onbekend',()=>{
-    const r=parseResults(fixture('results-2026-10-03.html'));expect(r.x01.find(x=>x.player==='Colin Tielemans')?.metrics).toMatchObject({PPD:17.86,Games:10,Wins:4,LTon:13,'6DO':null,'15DO':0});
+    const r=parseResults(fixture('results-2026-10-03.html'));expect(r.x01.find(x=>x.player==='Colin Tielemans')?.metrics).toMatchObject({PPD:17.86,Games:10,Wins:4,LTon:13,'15DO':0});expect(r.x01[0].metrics).not.toHaveProperty('6DO');
   });
   it('leest Cricket inclusief assists, hats en mark-rounds',()=>{
     const r=parseResults(fixture('results-2026-10-03.html'));expect(r.cricket.find(x=>x.player==='Colin Tielemans')?.metrics).toMatchObject({MPR:2.21,Games:8,Wins:2,Assists:0,'5MR':2,'6MR':1});
@@ -36,9 +36,9 @@ describe('LeagueLeader offline contract',()=>{
     expect(normalizeName('  Mike\u00a0 Van   De Voort ')).toBe('mike van de voort');expect(normalizeName("D’n Bonn")).not.toBe(normalizeName('Dn Bonn'));
     const r=parseResults(fixture('results-2026-10-03.html').replaceAll('No Skill Just Luck',' No Skill   Just Luck '));expect(normalizeName(r.standings[6].team)).toBe(normalizeName(NSJL_NAME));
   });
-  it('ontbrekende optionele kolom wordt NULL; noodzakelijke kolom blokkeert',()=>{
+  it('ontbrekende optionele kolom blijft afwezig; noodzakelijke kolom blokkeert',()=>{
     const b=fixture('results-2026-10-03.html');expect(()=>parseResults(b.replaceAll('PPD','Gemiddelde'))).toThrow();
-    const no15=b.replaceAll('15DO','Extra');expect(parseResults(no15).x01[0].metrics['15DO']).toBeNull();
+    const no15=b.replaceAll('15DO','Extra');expect(parseResults(no15).x01[0].metrics).not.toHaveProperty('15DO');
   });
   it.each(['','<html><body>Onderhoud</body></html>','<h2>Unable to display report</h2>'])('weigert lege, gewijzigde of foutpagina (%s)',html=>expect(()=>parseResults(html)).toThrow(SourceError));
   it('weigert oud report',()=>{

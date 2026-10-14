@@ -1,7 +1,7 @@
 import * as cheerio from 'cheerio';
 import { SourceError, type ReportMeta, type ResultsReport, type ScheduleReport, type PlayerStatRow } from './types';
 
-export const PARSER_VERSION = 'nsjl-leagueleader-1.0.0';
+export const PARSER_VERSION = 'nsjl-leagueleader-2.0.0';
 export const NSJL_NAME = 'No Skill Just Luck';
 export function normalizeName(value: string) { return value.normalize('NFKC').replace(/\s+/gu, ' ').trim().toLocaleLowerCase('nl-NL'); }
 export function sourceDate(value: string): string {
@@ -16,23 +16,29 @@ export function sourceDate(value: string): string {
 function number(value: string | undefined, field: string, integer = true): number {
   if (!value?.trim() || !/^(?:\d+)(?:\.\d+)?$/.test(value.trim())) throw new SourceError('INVALID_NUMBER', `Ongeldige waarde voor ${field}`);
   const n = Number(value);
-  if (!Number.isFinite(n) || n < 0 || (integer && !Number.isInteger(n))) throw new SourceError('INVALID_NUMBER', `Ongeldige waarde voor ${field}`);
+  if (!Number.isFinite(n) || n < 0 || (integer && !Number.isSafeInteger(n))) throw new SourceError('INVALID_NUMBER', `Ongeldige waarde voor ${field}`);
   return n;
 }
 type Table = { headers: string[]; rows: Record<string,string>[] };
+type RawRow = { cells: string[]; spanned: boolean };
+type RawTable = { headers: string[]; headerSpanned: boolean; rows: RawRow[] };
 function document(html: string) {
   if (!html.trim()) throw new SourceError('EMPTY_DOCUMENT','Lege bronpagina');
   const $ = cheerio.load(html);
   $('script, style, noscript').remove();
   const content = $('body').text().replace(/\s+/g,' ');
   if (/Unable to display report|Invalid shared report|captcha|Access denied/i.test(content)) throw new SourceError('SOURCE_ERROR_PAGE','Bron geeft een fout- of toegangspagina');
-  const tables: Table[] = [];
+  const tables: RawTable[] = [];
   $('table').each((_, table) => {
-    const rows = $(table).find('tr').filter((_,r)=>$(r).closest('table')[0]===table).toArray().map(r=>$(r).children('th, td').toArray().map(c=>$(c).text().replace(/\s+/g,' ').trim()));
-    const headers = rows[0] || [];
+    const rows = $(table).find('tr').filter((_,r)=>$(r).closest('table')[0]===table).toArray().map(r=>{
+      const cells=$(r).children('th, td').toArray();
+      return {cells:cells.map(c=>$(c).text().replace(/\s+/g,' ').trim()),spanned:cells.some(c=>['colspan','rowspan'].some(a=>$(c).attr(a)!==undefined&&$(c).attr(a)!=='1'))};
+    });
+    const headers = rows[0]?.cells || [];
     if (headers.length < 2) return;
-    if (new Set(headers).size !== headers.length) return;
-    tables.push({headers, rows:rows.slice(1).filter(r=>r.length===headers.length).map(r=>Object.fromEntries(headers.map((h,i)=>[h,r[i]])))});
+    // Preserve every row. Only selected data tables are decoded and validated;
+    // layout tables must not hide a damaged row in a selected report table.
+    tables.push({headers,headerSpanned:rows[0].spanned,rows:rows.slice(1)});
   });
   return {$,content,tables};
 }
@@ -52,10 +58,20 @@ function metadata(doc: ReturnType<typeof document>, kind: 'results' | 'schedule'
   const reportDateLocal=`${sourceDate(stamp[1])}T${String(hour%12+(stamp[4].toUpperCase()==='PM'?12:0)).padStart(2,'0')}:${stamp[3]}:00`;
   return {leagueCode:league[1],leagueName:league[2],seasonName,sourceDivision:division[1],reportDateLocal,reportTimezone:null};
 }
-function select(tables:Table[],required:string[]):Table {
+function select(tables:RawTable[],required:string[],divisionDivider?:string):Table {
   const matches=tables.filter(t=>required.every(h=>t.headers.includes(h)));
   if(matches.length!==1)throw new SourceError('UNKNOWN_STRUCTURE',`Verwachte tabel ontbreekt of is dubbel: ${required.join(', ')}`);
-  return matches[0];
+  const table=matches[0];
+  if(table.headerSpanned||table.headers.some(h=>!h)||new Set(table.headers).size!==table.headers.length)throw new SourceError('INVALID_TABLE_HEADER','Onvolledige of dubbele tabelkolommen');
+  const rows:Table['rows']=[];
+  for(const row of table.rows){
+    // The audited standings report contains this exact one-cell divider.
+    // It is a known structural row, not a player/team row to discard silently.
+    if(divisionDivider&&row.cells.length===1&&row.cells[0]===`Division: ${divisionDivider}`&&!row.spanned)continue;
+    if(row.spanned||row.cells.length!==table.headers.length)throw new SourceError('INCOMPLETE_SOURCE_ROW','Onvolledige of gewijzigde bronrij; import geweigerd');
+    rows.push(Object.fromEntries(table.headers.map((h,i)=>[h,row.cells[i]])));
+  }
+  return {headers:table.headers,rows};
 }
 export const X01_COLUMNS=['PPD','Games','Wins','Hats','3BD','Ton80','HTon','LTon','6DO','7DO','8DO','9DO','10DO','11DO','12DO','13DO','14DO','15DO'];
 export const CRICKET_COLUMNS=['MPR','Games','Wins','Assists','Hats','WHorse','5MR','6MR','7MR','8MR','9MR'];
@@ -64,14 +80,21 @@ function stats(t:Table,columns:string[],warnings:string[]):PlayerStatRow[] {
   if(unavailable.length)warnings.push(`Niet aangeboden statistiekkolommen: ${unavailable.join(', ')}`);
   return t.rows.map(r=>{
     if(!r.Player||!r.Team)throw new SourceError('INVALID_PLAYER','Speler of team ontbreekt');
-    const metrics=Object.fromEntries(columns.map(c=>[c,t.headers.includes(c)?number(r[c],c,!['PPD','MPR'].includes(c)):null]));
+    const games=number(r.Games,'Games');
+    const metrics=Object.fromEntries(columns.filter(c=>t.headers.includes(c)).map(c=>{
+      const average=['PPD','MPR'].includes(c);
+      // A blank cell is damaged/ambiguous input. Explicit unknown averages
+      // are allowed only without played games; counts always require numbers.
+      const value=average&&games===0&&['—','-','N/A'].includes(r[c])?null:number(r[c],c,!average);
+      return [c,value];
+    }));
     if((metrics.Wins??0)>(metrics.Games??0))throw new SourceError('INVALID_NUMBER','Spelerwins groter dan games');
     return {player:r.Player,team:r.Team,metrics};
   });
 }
 export function parseResults(html:string):ResultsReport {
   const doc=document(html);const meta=metadata(doc,'results');const warnings:string[]=[];
-  const standings=select(doc.tables,['Team','Win %','Games','Wins']).rows.filter(r=>!r.Team.startsWith('Division:')).map((r,i)=>{
+  const standings=select(doc.tables,['Team','Win %','Games','Wins'],meta.sourceDivision).rows.map((r,i)=>{
     const games=number(r.Games,'Games');const wins=number(r.Wins,'Wins');const winPercentage=number(r['Win %'],'Win %',false);
     if(!r.Team||wins>games||winPercentage>100)throw new SourceError('INVALID_STANDING','Ongeldige stand');
     if(games>0&&Math.abs(winPercentage-wins/games*100)>.15)throw new SourceError('INVALID_STANDING','Percentage wijkt af van games/wins');
@@ -85,10 +108,9 @@ export function parseResults(html:string):ResultsReport {
   const x01=stats(select(doc.tables,['Player','Team','PPD','Games','Wins']),X01_COLUMNS,warnings);
   const cricket=stats(select(doc.tables,['Player','Team','MPR','Games','Wins']),CRICKET_COLUMNS,warnings);
   if(!standings.length)throw new SourceError('EXPECTED_TEAMS_NOT_FOUND','Geen standregels aangetroffen');
-  const messages=doc.tables.filter(t=>t.headers.includes('League Message')).flatMap(t=>t.rows.map(r=>r['League Message'])).filter(Boolean);
   // League message is a one-column table; retain its text independently.
   const notices=doc.$('table').toArray().filter(t=>doc.$(t).text().includes('League Message')).map(t=>doc.$(t).text().replace(/\s+/g,' ').trim()).filter(t=>t.length<1500);
-  return {meta,standings,results,x01,cricket,messages:[...messages,...notices],warnings};
+  return {meta,standings,results,x01,cricket,messages:notices,warnings};
 }
 export function parseSchedule(html:string):ScheduleReport {
   const doc=document(html);const meta=metadata(doc,'schedule');
@@ -97,12 +119,15 @@ export function parseSchedule(html:string):ScheduleReport {
   const matches:ScheduleReport['matches']=[];
   for(const r of table.rows){
     if(r.Week)week=number(r.Week,'Week');if(r.Date)date=sourceDate(r.Date);
-    if(!r.Home&&!r.Away)continue;
+    if(!r.Home&&!r.Away){
+      if(!r.Week||!r.Date||r.At||r.Notes||r.Time)throw new SourceError('INVALID_SCHEDULE','Onvolledige schema-groepsregel');
+      continue;
+    }
     if(!r.Home&&r.Away==='Position Round')continue;
     if(!week||!date||!r.Home||!r.Away)throw new SourceError('INVALID_SCHEDULE','Onvolledige wedstrijdregel');
     if(normalizeName(r.Home)===normalizeName(r.Away))throw new SourceError('INVALID_SCHEDULE','Thuis en uit hetzelfde team');
     let startTime:string|null=null;
-    if(r.Time){if(!/^\d{2}:\d{2}$/.test(r.Time))throw new SourceError('INVALID_SCHEDULE','Onbekende aanvangstijd');startTime=r.Time;}
+    if(r.Time){if(!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(r.Time))throw new SourceError('INVALID_SCHEDULE','Onbekende aanvangstijd');startTime=r.Time;}
     matches.push({week,date,home:r.Home,away:r.Away,venue:r.At||null,notes:r.Notes||'',startTime});
   }
   if(!matches.length)throw new SourceError('EMPTY_SCHEDULE','Geen schemapairings gevonden');

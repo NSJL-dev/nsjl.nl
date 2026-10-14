@@ -1,7 +1,9 @@
 export type ReportMeta = { leagueCode: string; leagueName: string; seasonName: string; sourceDivision: string; reportDateLocal: string; reportTimezone: null };
 export type StandingRow = { team: string; position: number; games: number; wins: number; losses: number; winPercentage: number };
 export type ResultRow = { team: string; against: string; date: string; week: number; games: number; wins: number; losses: number; forfeits: number };
-export type PlayerStatRow = { player: string; team: string; metrics: Record<string, number | null> };
+// No key: the source did not offer the column. null: an explicitly unknown
+// average for a player with zero games. Neither means a known numeric zero.
+export type PlayerStatRow = { player: string; team: string; metrics: Partial<Record<string, number | null>> };
 export type ScheduleRow = { week: number; date: string; home: string; away: string; venue: string | null; notes: string; startTime: string | null };
 export type ResultsReport = { meta: ReportMeta; standings: StandingRow[]; results: ResultRow[]; x01: PlayerStatRow[]; cricket: PlayerStatRow[]; messages: string[]; warnings: string[] };
 export type ScheduleReport = { meta: ReportMeta; matches: ScheduleRow[]; teams: string[]; warnings: string[] };

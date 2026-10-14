@@ -10,7 +10,7 @@ export function validateBundle(results:ResultsReport,schedule:ScheduleReport,exp
   if(expected.previousScheduleDate&&schedule.meta.reportDateLocal<expected.previousScheduleDate)throw new SourceError('OLD_REPORT','Ouder schema overschrijft geen nieuwere gegevens');
   if(!results.standings.some(t=>normalizeName(t.team)===normalizeName(NSJL_NAME)))throw new SourceError('NSJL_NOT_FOUND','NSJL ontbreekt in stand');
   if(!schedule.teams.some(t=>normalizeName(t)===normalizeName(NSJL_NAME)))throw new SourceError('NSJL_NOT_FOUND','NSJL ontbreekt in schema');
-  if(expected.previousTeamCount&&results.standings.length<Math.max(1,expected.previousTeamCount*.6))throw new SourceError('UNEXPECTED_TEAM_DROP','Onverwacht grote daling van standregels');
+  if(expected.previousTeamCount&&results.standings.length<expected.previousTeamCount)throw new SourceError('UNEXPECTED_TEAM_DROP','Eerder bekende standregels ontbreken; contextreview nodig');
   const roster=new Set(schedule.teams.map(normalizeName));
   if(results.standings.some(r=>!roster.has(normalizeName(r.team))))throw new SourceError('ROSTER_MISMATCH','Standteam ontbreekt in roster');
   if(new Set(results.standings.map(r=>normalizeName(r.team))).size!==results.standings.length)throw new SourceError('DUPLICATE_TEAM','Dubbel team in stand');
@@ -28,6 +28,15 @@ export function validateBundle(results:ResultsReport,schedule:ScheduleReport,exp
     if(list.length>2)throw new SourceError('CONFLICTING_RESULT','Te veel uitslagperspectieven');
     if(list.length===2&&(list[0].date!==list[1].date||list[0].wins!==list[1].losses||list[1].wins!==list[0].losses))throw new SourceError('CONFLICTING_RESULT','Tegenstrijdige uitslagperspectieven');
   }
-  for(const stat of [...results.x01,...results.cricket])if(!roster.has(normalizeName(stat.team)))throw new SourceError('PLAYER_TEAM_UNKNOWN','Statistiekteam ontbreekt in roster');
+  if(results.standings.some(r=>r.games>0)&&(!results.results.length||!results.x01.length||!results.cricket.length))throw new SourceError('INCOMPLETE_REPORT','Resultaten of spelstatistieken ontbreken bij een gespeelde competitie');
+  for(const rows of [results.x01,results.cricket]){
+    const persons=new Set<string>();
+    for(const stat of rows){
+      if(!roster.has(normalizeName(stat.team)))throw new SourceError('PLAYER_TEAM_UNKNOWN','Statistiekteam ontbreekt in roster');
+      const key=JSON.stringify([normalizeName(stat.team),normalizeName(stat.player)]);
+      if(persons.has(key))throw new SourceError('DUPLICATE_PLAYER','Dubbele bronpersoonstatistieken');
+      persons.add(key);
+    }
+  }
   return {resultGroups:grouped,warnings:[...results.warnings,...schedule.warnings,...(schedule.teams.length>results.standings.length?['Team zonder uitslag blijft in het roster.']:[])]};
 }
