@@ -1,0 +1,62 @@
+{
+  "retrievedOn": "2026-10-15",
+  "cssSource": "https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800;900&display=swap",
+  "files": [
+    {
+      "file": "bebas-neue-latin-ext.woff2",
+      "family": "Bebas Neue",
+      "subset": "latin-ext",
+      "source": "https://fonts.gstatic.com/s/bebasneue/v16/JTUSjIg69CK48gW7PXoo9Wdhyzbi.woff2",
+      "sha256": "16c95ce45a2922f52551d38d565d14c92cf257b8f219c89613407d81fdd21a39",
+      "bytes": 8928
+    },
+    {
+      "file": "bebas-neue-latin.woff2",
+      "family": "Bebas Neue",
+      "subset": "latin",
+      "source": "https://fonts.gstatic.com/s/bebasneue/v16/JTUSjIg69CK48gW7PXoo9Wlhyw.woff2",
+      "sha256": "a7c90c89240c134f7fdd33d40c000ec90b79d675ea53e8cc5a6d423c073de412",
+      "bytes": 13768
+    },
+    {
+      "file": "nunito-cyrillic-ext.woff2",
+      "family": "Nunito",
+      "subset": "cyrillic-ext",
+      "source": "https://fonts.gstatic.com/s/nunito/v32/XRXV3I6Li01BKofIOOaBXso.woff2",
+      "sha256": "88985ca614d50fbe06bf527b0d67703d01cab729d744e41c1b5b6bf67c3a08e5",
+      "bytes": 28928
+    },
+    {
+      "file": "nunito-cyrillic.woff2",
+      "family": "Nunito",
+      "subset": "cyrillic",
+      "source": "https://fonts.gstatic.com/s/nunito/v32/XRXV3I6Li01BKofIMeaBXso.woff2",
+      "sha256": "63b14e3ef0966785438b8947380dfbcad178cbd3c6a5ed2172672ca0d8b839ac",
+      "bytes": 20776
+    },
+    {
+      "file": "nunito-vietnamese.woff2",
+      "family": "Nunito",
+      "subset": "vietnamese",
+      "source": "https://fonts.gstatic.com/s/nunito/v32/XRXV3I6Li01BKofIOuaBXso.woff2",
+      "sha256": "61e5958cf3c731423456b31739aa454317ea3bdcb205dd87090e94f632c3642b",
+      "bytes": 13096
+    },
+    {
+      "file": "nunito-latin-ext.woff2",
+      "family": "Nunito",
+      "subset": "latin-ext",
+      "source": "https://fonts.gstatic.com/s/nunito/v32/XRXV3I6Li01BKofIO-aBXso.woff2",
+      "sha256": "2c8d792869818ecb253a46bc3c63c7013df7aac2f69291c3c85e5cdc94160960",
+      "bytes": 35588
+    },
+    {
+      "file": "nunito-latin.woff2",
+      "family": "Nunito",
+      "subset": "latin",
+      "source": "https://fonts.gstatic.com/s/nunito/v32/XRXV3I6Li01BKofINeaB.woff2",
+      "sha256": "ba344451eab25b217a165363b1982048a5e5830a0daf36577973955a04cac793",
+      "bytes": 39128
+    }
+  ]
+}

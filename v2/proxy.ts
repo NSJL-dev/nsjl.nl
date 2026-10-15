@@ -9,7 +9,7 @@ export async function proxy(request: NextRequest) {
   const contactEndpoint=formspreeEndpoint(process.env.FORM_SPREE_ENDPOINT)||'';
   // fetch is governed by connect-src, not form-action. Use the exact public
   // endpoint on every document so App Router navigation into home also works.
-  const csp=`default-src 'self'; script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${process.env.NODE_ENV==='development'?"'unsafe-eval'":''}; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: ${supabase}; connect-src 'self' ${supabase} ${contactEndpoint}; form-action 'self' https://formspree.io; frame-ancestors 'none'; base-uri 'self'; object-src 'none'`;
+  const csp=`default-src 'self'; script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${process.env.NODE_ENV==='development'?"'unsafe-eval'":''}; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: ${supabase}; connect-src 'self' ${supabase} ${contactEndpoint}; form-action 'self' https://formspree.io; frame-ancestors 'none'; base-uri 'self'; object-src 'none'`;
   const path=request.nextUrl.pathname;
   const next = () => {
     const headers=new Headers(request.headers);headers.set('x-nonce',nonce);headers.set('Content-Security-Policy',csp);
