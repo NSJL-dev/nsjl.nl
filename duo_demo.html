@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Transactie – DEMO</title>
+<style>
+  :root{--bg:#1c1f27;--panel:#1d2029;--muted:#929eb4;--line:#39404d;--blue:#0757f5;--white:#e0e3eb}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--white);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;min-height:100vh}
+  .phone{width:min(100%,430px);min-height:100vh;margin:auto;position:relative;overflow:hidden;background:linear-gradient(#171a21 0,#272d38 31%,var(--bg) 31%)}
+  .status{height:78px;padding:25px 42px 0;display:flex;justify-content:space-between;font-size:19px;font-weight:600;color:#f5f5f7}
+  .topbar{height:105px;display:flex;align-items:flex-start;justify-content:space-between;padding:0 28px}
+  .circle{width:54px;height:54px;border-radius:50%;background:#30343d;display:grid;place-items:center;color:#d9dce4;font-size:29px;font-weight:300}
+  .right{display:flex;gap:12px}
+  .book{position:absolute;top:198px;left:50%;transform:translateX(-50%);width:88px;height:88px;border-radius:50%;background:#2b303c;border:9px solid #20242e;display:grid;place-items:center;font-size:34px;z-index:2}
+  .panel{margin:58px 18px 0;background:var(--panel);border-radius:12px;padding:31px 18px 19px;box-shadow:0 12px 24px #0005;position:relative}
+  .demo{position:absolute;top:10px;left:50%;transform:translateX(-50%);font-size:10px;letter-spacing:2px;font-weight:800;color:#ffcf69;border:1px solid #a87923;border-radius:4px;padding:3px 7px;background:#3a2d17}
+  .summary{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;min-height:58px}
+  .account{font-size:16px;line-height:1.2}
+  .amount{font-size:29px;font-weight:700;letter-spacing:.2px;color:#e1e5eb;background:#003d16;border:1px solid #00b75c;border-radius:5px;padding:6px 9px;white-space:nowrap}
+  .rule{height:1px;background:var(--line);margin:35px 0 19px}
+  .date{text-align:center;color:var(--muted);font-size:16px}
+  .tabs{height:60px;border-radius:34px;background:#2b303b;margin:27px 18px 0;padding:3px;display:flex}
+  .tab{flex:1;border:0;border-radius:32px;background:transparent;color:#d6d9e1;font-size:16px}
+  .tab.active{background:var(--blue);font-weight:600}
+  .details{padding:26px 18px 100px}
+  .field{margin:0 0 25px;position:relative;padding-right:34px}
+  .field label{display:block;font-size:16px;margin-bottom:6px;color:#d7dae2}
+  .value{font-size:17px;line-height:1.45;color:var(--muted);white-space:pre-line;overflow-wrap:anywhere}
+  .copy{position:absolute;right:0;bottom:6px;border:0;background:none;color:#f0f1f5;font-size:24px;padding:2px;cursor:pointer}
+  .bottom{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(100%,430px);height:76px;background:#1d2029;border-top:1px solid #343a46;display:flex;justify-content:space-around;align-items:center}
+  .navitem{text-align:center;color:#d4d7df;font-size:13px;line-height:1.4;min-width:58px}
+  .navitem .ico{font-size:25px;display:block}
+  .navitem.active{color:#4387ff}
+  .editor{width:min(100% - 28px,700px);margin:24px auto 40px;background:#252a35;border:1px solid #414958;border-radius:14px;padding:18px}
+  .editor h2{font-size:18px;margin:0 0 8px}
+  .editor p{font-size:13px;color:#aeb8c9;margin:0 0 16px;line-height:1.5}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .control{display:flex;flex-direction:column;gap:5px}
+  .control.full{grid-column:1/-1}
+  .control label{font-size:12px;color:#c4ccda}
+  input,textarea{width:100%;border:1px solid #515b6b;border-radius:7px;background:#171b23;color:#f0f2f7;padding:10px;font:14px inherit}
+  textarea{min-height:58px;resize:vertical}
+  .hint{font-size:11px;color:#9ba7ba;margin-top:12px}
+  @media(max-width:360px){.amount{font-size:24px}.account{font-size:14px}.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="status"><span>15:26</span><span>●●●　◉　▰</span></div>
+  <div class="topbar"><div class="circle">‹</div><div class="right"><div class="circle">⌕</div><div class="circle">▢</div></div></div>
+  <div class="book">♧</div>
+  <section class="panel">
+    <div class="demo">DEMO • GEEN ECHTE BETALING</div>
+    <div class="summary"><div class="account" id="vFrom">Voorbeeldrekening</div><div class="amount" id="vAmount">€ +210,18</div></div>
+    <div class="rule"></div><div class="date" id="vDate">23 oktober 2026, 09:31</div>
+  </section>
+  <div class="tabs"><button class="tab active" type="button">Details</button><button class="tab" type="button">Acties</button></div>
+  <section class="details">
+    <div class="field"><label>Omschrijving</label><div class="value" id="vDescription">VOORBEELD-001 Maandbetaling<br>Studievoorbeeld maand 10/2026</div><button class="copy" aria-label="Kopieer voorbeeld">▢</button></div>
+    <div class="field"><label>Van</label><div class="value" id="vSender">Voorbeeldinstantie</div><button class="copy" aria-label="Kopieer voorbeeld">▢</button></div>
+    <div class="field"><label>IBAN</label><div class="value" id="vIban">NL00 TEST 0000 0000 00</div><button class="copy" aria-label="Kopieer voorbeeld">▢</button></div>
+    <div class="field"><label>Naar</label><div class="value" id="vReceiver">Voorbeeldrekening<br>NL00 TEST 0000 0000 00</div><button class="copy" aria-label="Kopieer voorbeeld">▢</button></div>
+    <div class="field"><label>Categorie</label><div class="value" id="vCategory">Studievoorbeeld</div></div>
+  </section>
+  <nav class="bottom"><div class="navitem active"><span class="ico">⌂</span>Overzicht</div><div class="navitem"><span class="ico">◴</span>Inzicht</div><div class="navitem"><span class="ico">▱</span>Producten</div><div class="navitem"><span class="ico">▤</span>Hulp</div><div class="navitem"><span class="ico">☷</span>Instellingen</div></nav>
+</div>
+<section class="editor">
+  <h2>Voorbeeld aanpassen</h2>
+  <p>Wijzig de velden hieronder. De voorbeeldweergave wordt meteen bijgewerkt. Gebruik uitsluitend fictieve gegevens.</p>
+  <div class="grid">
+    <div class="control"><label for="amount">Bedrag</label><input id="amount" value="+210,18"></div>
+    <div class="control"><label for="date">Datum en tijd</label><input id="date" value="23 oktober 2026, 09:31"></div>
+    <div class="control"><label for="from">Naam bovenaan</label><input id="from" value="Voorbeeldrekening"></div>
+    <div class="control"><label for="sender">Van</label><input id="sender" value="Voorbeeldinstantie"></div>
+    <div class="control full"><label for="description">Omschrijving</label><textarea id="description">VOORBEELD-001 Maandbetaling
+Studievoorbeeld maand 10/2026</textarea></div>
+    <div class="control"><label for="iban">IBAN (fictief)</label><input id="iban" value="NL00 TEST 0000 0000 00"></div>
+    <div class="control"><label for="category">Categorie</label><input id="category" value="Studievoorbeeld"></div>
+    <div class="control"><label for="receiver">Naam ontvanger</label><input id="receiver" value="Voorbeeldrekening"></div>
+    <div class="control"><label for="receiverIban">IBAN ontvanger (fictief)</label><input id="receiverIban" value="NL00 TEST 0000 0000 00"></div>
+  </div>
+  <div class="hint">Dit is een zelfstandige HTML-demo. Er wordt geen betaling uitgevoerd en er is geen verbinding met een bank.</div>
+</section>
+<script>
+const $ = id => document.getElementById(id);
+function update(){
+  $('vAmount').textContent = '€ ' + $('amount').value;
+  $('vDate').textContent = $('date').value;
+  $('vFrom').textContent = $('from').value;
+  $('vSender').textContent = $('sender').value;
+  $('vDescription').textContent = $('description').value;
+  $('vIban').textContent = $('iban').value;
+  $('vCategory').textContent = $('category').value;
+  $('vReceiver').textContent = $('receiver').value + '\n' + $('receiverIban').value;
+}
+document.querySelectorAll('.editor input,.editor textarea').forEach(el=>el.addEventListener('input',update));
+document.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));btn.classList.add('active')}));
+update();
+</script>
+</body>
+</html>
